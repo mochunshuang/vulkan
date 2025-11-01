@@ -1,0 +1,241 @@
+{
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "clangd.path": "E:/mysoftware/clang+llvm-21.1.2-x86_64-pc-windows-msvc/bin/clangd.exe",
+    "query-drivers": [
+        "D:/mysoftware/clangd_18.1.3/bin/clangd.exe",
+        "D:/mysoftware/llvm-mingw-20231128-ucrt-x86_64/bin/clangd.exe",
+        "D:/mysoftware/x86_64-13.2.0-release-posix-seh-ucrt-rt_v11-rev1/mingw64/bin/g++.exe",
+        "D:/mysoftware/llvm-mingw-20231128-ucrt-x86_64/bin/g++.exe",
+        "D:/mysoftware/gcc-v14.1.0-mingw-v11.0.1-x86_64/bin/g++.exe",
+        "D:/mysoftware/gcc-14.1.0-llvm-18.1.7-mingw-w64ucrt-12.0.0/mingw32/bin/g++.exe",
+        "D:/mysoftware/gcc-14.1.0-llvm-18.1.7-mingw-w64ucrt-12.0.0/mingw32/bin/clang++.exe"
+    ],
+    "terminal.integrated.profiles.windows": {
+        "PowerShell -NoProfile": {
+            "source": "PowerShell",
+            "args": [
+                "-NoProfile",
+                "-NoExit",
+                "-Command",
+                "chcp 65001"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell -NoProfile",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--query-driver=E:/mysoftware/clang+llvm-21.1.2-x86_64-pc-windows-msvc/bin/clang++.exe",
+        "--log=verbose",
+        "--pretty",
+        "--all-scopes-completion",
+        "--completion-style=bundled",
+        "--cross-file-rename",
+        "--header-insertion=iwyu",
+        "--header-insertion-decorators",
+        "--background-index",
+        "--clang-tidy",
+        "--clang-tidy-checks=cppcoreguidelines-*,performance-*,bugprone-*,portability-*,modernize-*,google-*",
+        "-j=2",
+        "--pch-storage=disk",
+        "--function-arg-placeholders=false",
+        "--experimental-modules-support"
+    ],
+    "cmake.generator": "Ninja",
+    // NOTE: 无需手动配置。让工具自己动态设置
+    // 注意cmaketool 要配置为Debug
+    // "cmake.debugConfig": {
+    //     "type": "lldb",
+    //     "miDebuggerPath": "D:/mysoftware/gcc-14.1.0-llvm-18.1.7-mingw-w64ucrt-12.0.0/mingw32/bin/lldb.exe",
+    // },
+    // "cmake.debugConfig": {
+    //     "type": "cppdbg",
+    //     "miDebuggerPath": "D:/mysoftware/x86_64-14.2.0-release-posix-seh-ucrt-rt_v12/mingw64/bin/gdb.exe"
+    // },
+    // clangd 或 c_cpp
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "C_Cpp.default.cppStandard": "gnu++20",
+    "editor.semanticTokenColorCustomizations": {
+        "enabled": true,
+        "[Default Dark Modern]": {
+            "enabled": true,
+            "rules": {
+                "operator": "#dd1735"
+            }
+        }
+    },
+    "editor.bracketPairColorization.enabled": true,
+    "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
+    // 高亮的对括号
+    "[cpp]": {
+        // "editor.language.brackets": [
+        //     ["(",")"],
+        //     ["{","}"],
+        //     ["[","]"],
+        //     ["<",">"]
+        // ],
+        "editor.language.colorizedBracketPairs": [
+            [
+                "(",
+                ")"
+            ],
+            [
+                "{",
+                "}"
+            ],
+            [
+                "[",
+                "]"
+            ],
+            [
+                "<",
+                ">"
+            ]
+        ]
+    },
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "markup.other.log.error",
+                "settings": {
+                    "foreground": "#FF0000"
+                }
+            },
+            {
+                "scope": "markup.other.log.warn",
+                "settings": {
+                    "foreground": "#c500f7cc"
+                }
+            },
+            {
+                "scope": "markup.other.log.info",
+                "settings": {
+                    "foreground": "#2cd0d3"
+                }
+            },
+            {
+                "scope": "markup.other.log.debug",
+                "settings": {
+                    "foreground": "#888585"
+                }
+            },
+            {
+                "scope": "markup.other.log.highlight",
+                "settings": {
+                    "foreground": "#19ff04"
+                }
+            }
+        ],
+        "[Default Dark Modern]": {
+            "textMateRules": [
+                {
+                    "scope": "entity.name.namespace.cpp",
+                    "settings": {
+                        "foreground": "#d4d3d3"
+                    }
+                },
+                // :: 命名空间
+                {
+                    "scope": "punctuation.separator.scope-resolution.cpp",
+                    "settings": {
+                        "foreground": "#d4d3d3"
+                    }
+                },
+                {
+                    "scope": "punctuation.separator.scope-resolution.function.call.cpp",
+                    "settings": {
+                        "foreground": "#d4d3d3"
+                    }
+                },
+                // 参数
+                {
+                    "scope": "entity.name.type.parameter",
+                    "settings": {
+                        "foreground": "#f66ecd"
+                    }
+                },
+                // 函数部分
+                {
+                    "scope": "entity.name.function.cpp",
+                    "settings": {
+                        "foreground": "#e3e775"
+                    }
+                },
+                {
+                    "scope": "entity.name.function.member.cpp",
+                    "settings": {
+                        "foreground": "#e3e775"
+                    }
+                }
+                // 概念，结构化绑定部分
+                // {
+                //     "scope": "meta.block.cpp",
+                //     "settings": {
+                //         "foreground": "#9CDCFE"
+                //     }
+                // }
+            ]
+        }
+    },
+    "better-comments.tags": [
+        {
+            "tag": "Note:",
+            "color": "#00cc44", // 你可以选择任何你喜欢的颜色
+            "strikethrough": false,
+            "underline": false,
+            "backgroundColor": "transparent",
+            "bold": true,
+            "italic": true
+        }
+    ],
+    "files.associations": {
+        "iostream": "cpp",
+        "type_traits": "cpp",
+        "array": "cpp",
+        "atomic": "cpp",
+        "bit": "cpp",
+        "*.tcc": "cpp",
+        "cctype": "cpp",
+        "clocale": "cpp",
+        "cmath": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "cstddef": "cpp",
+        "cstdint": "cpp",
+        "cstdio": "cpp",
+        "cstdlib": "cpp",
+        "ctime": "cpp",
+        "cwchar": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "exception": "cpp",
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "random": "cpp",
+        "string_view": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "utility": "cpp",
+        "initializer_list": "cpp",
+        "iomanip": "cpp",
+        "iosfwd": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "new": "cpp",
+        "numbers": "cpp",
+        "ostream": "cpp",
+        "sstream": "cpp",
+        "stdexcept": "cpp",
+        "streambuf": "cpp",
+        "typeinfo": "cpp"
+    }
+}
