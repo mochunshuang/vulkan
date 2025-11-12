@@ -16,4 +16,8 @@ target_include_directories(vulkan_modules
 
 # config vulkan
 target_compile_definitions(vulkan_modules PUBLIC -DUSE_CPP20_MODULES -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
+
+# for <cstdlib>
+target_compile_definitions(vulkan_modules PUBLIC EXIT_SUCCESS=0 EXIT_FAILURE=1)
+
 unset(VULKAN_SDK_DIR)

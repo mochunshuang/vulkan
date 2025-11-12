@@ -88,8 +88,10 @@ Diagnostics:
   Includes:
     IgnoreHeader: Python\.h
 
+# https://clangd.llvm.org/config#index
 Index:
-  Background: Skip     # Disable slow background indexing of these files.
+  Background: Build
+  # Background: Skip     # Disable slow background indexing of these files.
 
 # https://clangd.llvm.org/config#completion
 Completion:

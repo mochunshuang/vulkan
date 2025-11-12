@@ -6,8 +6,8 @@ import vulkan_hpp;
 #endif
 #include <GLFW/glfw3.h>
 
-#include <iostream>
-#include <cstdlib>
+import std;
+import std.compat;
 
 // NOLINTBEGIN
 
@@ -28,6 +28,7 @@ class HelloTriangleApplication
   private:
     GLFWwindow *window = nullptr;
 
+    // NOTE: 搭建基本窗口
     void initWindow()
     {
         glfwInit();
