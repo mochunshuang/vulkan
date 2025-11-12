@@ -1,4 +1,0 @@
-ninja_dyndep_version = 1.0
-build CMakeFiles/vulkan_modules.dir/E_/mysoftware/VulkanSDK/1.4.321.1/Include/vulkan/vulkan.cppm.obj | CMakeFiles/vulkan_modules.dir/vulkan_hpp.pcm: dyndep
-  restat = 1
-
