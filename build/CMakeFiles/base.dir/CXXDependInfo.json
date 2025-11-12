@@ -1,0 +1,34 @@
+{
+	"bmi-installation" : null,
+	"compiler-frontend-variant" : "GNU",
+	"compiler-id" : "Clang",
+	"compiler-simulate-id" : "",
+	"config" : "Release",
+	"cxx-modules" : {},
+	"database-info" : null,
+	"dir-cur-bld" : "E:/0_github_project/vulkan_module/build",
+	"dir-cur-src" : "E:/0_github_project/vulkan_module",
+	"dir-top-bld" : "E:/0_github_project/vulkan_module/build",
+	"dir-top-src" : "E:/0_github_project/vulkan_module",
+	"exports" : [],
+	"forward-modules-from-target-dirs" : [],
+	"include-dirs" : 
+	[
+		"E:\\mysoftware\\VulkanSDK\\1.4.321.1\\Include"
+	],
+	"language" : "CXX",
+	"linked-target-dirs" : 
+	[
+		"E:/0_github_project/vulkan_module/build/CMakeFiles/vulkan_modules.dir",
+		"E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx23.dir"
+	],
+	"module-dir" : "E:/0_github_project/vulkan_module/build/CMakeFiles/base.dir",
+	"sources" : 
+	{
+		"CMakeFiles/base.dir/test/base/base.cpp.obj" : 
+		{
+			"language" : "CXX",
+			"source" : "E:/0_github_project/vulkan_module/test/base/base.cpp"
+		}
+	}
+}

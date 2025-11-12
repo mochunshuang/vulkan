@@ -1,0 +1,85 @@
+{
+	"kind" : "toolchains",
+	"toolchains" : 
+	[
+		{
+			"compiler" : 
+			{
+				"id" : "Clang",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/include/c++/v1",
+						"E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/lib/clang/21/include",
+						"E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/include"
+					],
+					"linkDirectories" : 
+					[
+						"E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/x86_64-w64-mingw32/lib",
+						"E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/x86_64-w64-mingw32/mingw/lib",
+						"E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/lib",
+						"E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/lib/clang/21/lib/windows"
+					],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : 
+					[
+						"c++",
+						"mingw32",
+						"unwind",
+						"moldname",
+						"mingwex",
+						"advapi32",
+						"shell32",
+						"user32",
+						"kernel32",
+						"mingw32",
+						"unwind",
+						"moldname",
+						"mingwex",
+						"kernel32"
+					]
+				},
+				"path" : "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/bin/g++.exe",
+				"version" : "21.1.1"
+			},
+			"language" : "CXX",
+			"sourceFileExtensions" : 
+			[
+				"C",
+				"M",
+				"c++",
+				"cc",
+				"cpp",
+				"cxx",
+				"m",
+				"mm",
+				"mpp",
+				"CPP",
+				"ixx",
+				"cppm",
+				"ccm",
+				"cxxm",
+				"c++m"
+			]
+		},
+		{
+			"compiler" : 
+			{
+				"implicit" : {},
+				"path" : "windres"
+			},
+			"language" : "RC",
+			"sourceFileExtensions" : 
+			[
+				"rc",
+				"RC"
+			]
+		}
+	],
+	"version" : 
+	{
+		"major" : 1,
+		"minor" : 0
+	}
+}

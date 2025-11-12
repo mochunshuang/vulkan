@@ -1,0 +1,45 @@
+{
+	"bmi-installation" : null,
+	"compiler-frontend-variant" : "GNU",
+	"compiler-id" : "Clang",
+	"compiler-simulate-id" : "",
+	"config" : "Release",
+	"cxx-modules" : 
+	{
+		"CMakeFiles/__cmake_cxx23.dir/E_/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.compat.cppm.obj" : 
+		{
+			"bmi-only" : false,
+			"destination" : null,
+			"name" : "std",
+			"relative-directory" : "",
+			"source" : "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.compat.cppm",
+			"type" : "CXX_MODULES",
+			"visibility" : "PUBLIC"
+		},
+		"CMakeFiles/__cmake_cxx23.dir/E_/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.cppm.obj" : 
+		{
+			"bmi-only" : false,
+			"destination" : null,
+			"name" : "std",
+			"relative-directory" : "",
+			"source" : "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.cppm",
+			"type" : "CXX_MODULES",
+			"visibility" : "PUBLIC"
+		}
+	},
+	"database-info" : null,
+	"dir-cur-bld" : "E:/0_github_project/vulkan_module/build",
+	"dir-cur-src" : "E:/0_github_project/vulkan_module",
+	"dir-top-bld" : "E:/0_github_project/vulkan_module/build",
+	"dir-top-src" : "E:/0_github_project/vulkan_module",
+	"exports" : [],
+	"forward-modules-from-target-dirs" : [],
+	"include-dirs" : 
+	[
+		"E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\x86_64-w64-mingw32\\lib\\..\\..\\share\\libc++\\v1"
+	],
+	"language" : "CXX",
+	"linked-target-dirs" : [],
+	"module-dir" : "E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx23.dir",
+	"sources" : {}
+}

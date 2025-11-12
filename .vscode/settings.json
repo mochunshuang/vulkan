@@ -2,16 +2,6 @@
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
-    "clangd.path": "E:/mysoftware/clang+llvm-21.1.2-x86_64-pc-windows-msvc/bin/clangd.exe",
-    "query-drivers": [
-        "D:/mysoftware/clangd_18.1.3/bin/clangd.exe",
-        "D:/mysoftware/llvm-mingw-20231128-ucrt-x86_64/bin/clangd.exe",
-        "D:/mysoftware/x86_64-13.2.0-release-posix-seh-ucrt-rt_v11-rev1/mingw64/bin/g++.exe",
-        "D:/mysoftware/llvm-mingw-20231128-ucrt-x86_64/bin/g++.exe",
-        "D:/mysoftware/gcc-v14.1.0-mingw-v11.0.1-x86_64/bin/g++.exe",
-        "D:/mysoftware/gcc-14.1.0-llvm-18.1.7-mingw-w64ucrt-12.0.0/mingw32/bin/g++.exe",
-        "D:/mysoftware/gcc-14.1.0-llvm-18.1.7-mingw-w64ucrt-12.0.0/mingw32/bin/clang++.exe"
-    ],
     "terminal.integrated.profiles.windows": {
         "PowerShell -NoProfile": {
             "source": "PowerShell",
@@ -24,16 +14,17 @@
         }
     },
     "terminal.integrated.defaultProfile.windows": "PowerShell -NoProfile",
+    "clangd.path": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/bin/clangd.exe",
     "clangd.arguments": [
         "--compile-commands-dir=${workspaceFolder}/build",
-        "--query-driver=E:/mysoftware/clang+llvm-21.1.2-x86_64-pc-windows-msvc/bin/clang++.exe",
+        "--query-driver=E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/bin/g++.exe",
         "--log=verbose",
         "--pretty",
         "--all-scopes-completion",
         "--completion-style=bundled",
         "--cross-file-rename",
-        "--header-insertion=iwyu",
-        "--header-insertion-decorators",
+        "--header-insertion=never", // 还需要添加头文件吗？
+        // 删除 --header-insertion-decorators
         "--background-index",
         "--clang-tidy",
         "--clang-tidy-checks=cppcoreguidelines-*,performance-*,bugprone-*,portability-*,modernize-*,google-*",
@@ -43,8 +34,7 @@
         "--experimental-modules-support"
     ],
     "cmake.generator": "Ninja",
-    // NOTE: 无需手动配置。让工具自己动态设置
-    // 注意cmaketool 要配置为Debug
+    // cmake-tool 自己选择更好
     // "cmake.debugConfig": {
     //     "type": "lldb",
     //     "miDebuggerPath": "D:/mysoftware/gcc-14.1.0-llvm-18.1.7-mingw-w64ucrt-12.0.0/mingw32/bin/lldb.exe",
@@ -65,6 +55,8 @@
             }
         }
     },
+    // 允许灰色擦拭提示
+    "editor.inlayHints.enabled": "on",
     "editor.bracketPairColorization.enabled": true,
     "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
     // 高亮的对括号
@@ -188,54 +180,5 @@
             "bold": true,
             "italic": true
         }
-    ],
-    "files.associations": {
-        "iostream": "cpp",
-        "type_traits": "cpp",
-        "array": "cpp",
-        "atomic": "cpp",
-        "bit": "cpp",
-        "*.tcc": "cpp",
-        "cctype": "cpp",
-        "clocale": "cpp",
-        "cmath": "cpp",
-        "compare": "cpp",
-        "concepts": "cpp",
-        "cstddef": "cpp",
-        "cstdint": "cpp",
-        "cstdio": "cpp",
-        "cstdlib": "cpp",
-        "ctime": "cpp",
-        "cwchar": "cpp",
-        "cwctype": "cpp",
-        "deque": "cpp",
-        "string": "cpp",
-        "unordered_map": "cpp",
-        "vector": "cpp",
-        "exception": "cpp",
-        "algorithm": "cpp",
-        "functional": "cpp",
-        "iterator": "cpp",
-        "memory": "cpp",
-        "memory_resource": "cpp",
-        "numeric": "cpp",
-        "optional": "cpp",
-        "random": "cpp",
-        "string_view": "cpp",
-        "system_error": "cpp",
-        "tuple": "cpp",
-        "utility": "cpp",
-        "initializer_list": "cpp",
-        "iomanip": "cpp",
-        "iosfwd": "cpp",
-        "istream": "cpp",
-        "limits": "cpp",
-        "new": "cpp",
-        "numbers": "cpp",
-        "ostream": "cpp",
-        "sstream": "cpp",
-        "stdexcept": "cpp",
-        "streambuf": "cpp",
-        "typeinfo": "cpp"
-    }
+    ]
 }

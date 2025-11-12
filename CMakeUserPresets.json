@@ -14,9 +14,13 @@
             "binaryDir": "${sourceDir}/build/",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/",
-                "CMAKE_CXX_COMPILER": "D:/mysoftware/x86_64-14.2.0-release-posix-seh-ucrt-rt_v12/mingw64/bin/g++.exe",
+                "CMAKE_C_COMPILER": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/bin/gcc.exe",
+                "CMAKE_CXX_COMPILER": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/bin/g++.exe",
                 "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_FLAGS": "-O3 -g"
+                "CMAKE_MAKE_PROGRAM": "D:/mysoftware/ninja/ninja.exe"
+            },
+            "environment": {
+                "PATH": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/x86_64-w64-mingw32/bin;$penv{PATH}"
             }
         },
         {
@@ -27,9 +31,10 @@
             "binaryDir": "${sourceDir}/build/",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/",
-                "CMAKE_CXX_COMPILER": "E:/mysoftware/clang+llvm-21.1.2-x86_64-pc-windows-msvc/bin/clang++.exe",
+                "CMAKE_C_COMPILER": "E:/github/llvm-project/build/bin/clang.exe",
+                "CMAKE_CXX_COMPILER": "E:/github/llvm-project/build/bin/clang++.exe",
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CXX_FLAGS": "-O3 -g"
+                "CMAKE_MAKE_PROGRAM": "D:/mysoftware/ninja/ninja.exe"
             }
         },
         {
@@ -56,10 +61,9 @@
             "binaryDir": "${sourceDir}/build/",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/",
-                "CMAKE_C_COMPILER": "cl.exe",
                 "CMAKE_CXX_COMPILER": "cl.exe",
                 "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_FLAGS": "-O3 -g"
+                "CMAKE_MAKE_PROGRAM": "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe"
             }
         }
     ],

@@ -1,0 +1,21 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "CMakeFiles\\__cmake_cxx23.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.compat.cppm.obj",
+      "provides": [
+        {
+          "is-interface": true,
+          "logical-name": "std.compat",
+          "source-path": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.compat.cppm"
+        }
+      ],
+      "requires": [
+        {
+          "logical-name": "std"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}

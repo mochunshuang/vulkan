@@ -1,0 +1,56 @@
+[
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -IE:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/x86_64-w64-mingw32/lib/../../share/libc++/v1 -O3 -DNDEBUG -std=c++23 -Wno-reserved-module-identifier @CMakeFiles\\__cmake_cxx23.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.cppm.obj.modmap -o CMakeFiles\\__cmake_cxx23.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.cppm.obj -c E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.cppm",
+  "file": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.cppm",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx23.dir/E_/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.cppm.obj"
+},
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -IE:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/x86_64-w64-mingw32/lib/../../share/libc++/v1 -O3 -DNDEBUG -std=c++23 -Wno-reserved-module-identifier @CMakeFiles\\__cmake_cxx23.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.compat.cppm.obj.modmap -o CMakeFiles\\__cmake_cxx23.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.compat.cppm.obj -c E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.compat.cppm",
+  "file": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.compat.cppm",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx23.dir/E_/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.compat.cppm.obj"
+},
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -IE:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/x86_64-w64-mingw32/lib/../../share/libc++/v1 -O3 -DNDEBUG -std=c++26 -Wno-reserved-module-identifier @CMakeFiles\\__cmake_cxx26.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.cppm.obj.modmap -o CMakeFiles\\__cmake_cxx26.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.cppm.obj -c E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.cppm",
+  "file": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.cppm",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx26.dir/E_/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.cppm.obj"
+},
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -IE:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/x86_64-w64-mingw32/lib/../../share/libc++/v1 -O3 -DNDEBUG -std=c++26 -Wno-reserved-module-identifier @CMakeFiles\\__cmake_cxx26.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.compat.cppm.obj.modmap -o CMakeFiles\\__cmake_cxx26.dir\\E_\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.compat.cppm.obj -c E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\share\\libc++\\v1\\std.compat.cppm",
+  "file": "E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.compat.cppm",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx26.dir/E_/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.compat.cppm.obj"
+},
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -O3 -DNDEBUG -std=c++23 @CMakeFiles\\main.dir\\src\\main.cpp.obj.modmap -o CMakeFiles\\main.dir\\src\\main.cpp.obj -c E:\\0_github_project\\vulkan_module\\src\\main.cpp",
+  "file": "E:/0_github_project/vulkan_module/src/main.cpp",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/main.dir/src/main.cpp.obj"
+},
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -O3 -DNDEBUG -std=c++23 @CMakeFiles\\main.dir\\src\\math.cppm.obj.modmap -o CMakeFiles\\main.dir\\src\\math.cppm.obj -c E:\\0_github_project\\vulkan_module\\src\\math.cppm",
+  "file": "E:/0_github_project/vulkan_module/src/math.cppm",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/main.dir/src/math.cppm.obj"
+},
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -O3 -DNDEBUG -std=c++23 @CMakeFiles\\main.dir\\src\\foo.cppm.obj.modmap -o CMakeFiles\\main.dir\\src\\foo.cppm.obj -c E:\\0_github_project\\vulkan_module\\src\\foo.cppm",
+  "file": "E:/0_github_project/vulkan_module/src/foo.cppm",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/main.dir/src/foo.cppm.obj"
+},
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -DUSE_CPP20_MODULES -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -IE:/mysoftware/VulkanSDK/1.4.321.1/Include -O3 -DNDEBUG -std=c++23 @CMakeFiles\\vulkan_modules.dir\\E_\\mysoftware\\VulkanSDK\\1.4.321.1\\Include\\vulkan\\vulkan.cppm.obj.modmap -o CMakeFiles\\vulkan_modules.dir\\E_\\mysoftware\\VulkanSDK\\1.4.321.1\\Include\\vulkan\\vulkan.cppm.obj -c E:\\mysoftware\\VulkanSDK\\1.4.321.1\\Include\\vulkan\\vulkan.cppm",
+  "file": "E:/mysoftware/VulkanSDK/1.4.321.1/Include/vulkan/vulkan.cppm",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/vulkan_modules.dir/E_/mysoftware/VulkanSDK/1.4.321.1/Include/vulkan/vulkan.cppm.obj"
+},
+{
+  "directory": "E:/0_github_project/vulkan_module/build",
+  "command": "E:\\mysoftware\\llvm-mingw-20250910-ucrt-x86_64\\bin\\g++.exe -DUSE_CPP20_MODULES -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -IE:/mysoftware/VulkanSDK/1.4.321.1/Include -O3 -DNDEBUG -std=c++23 @CMakeFiles\\base.dir\\test\\base\\base.cpp.obj.modmap -o CMakeFiles\\base.dir\\test\\base\\base.cpp.obj -c E:\\0_github_project\\vulkan_module\\test\\base\\base.cpp",
+  "file": "E:/0_github_project/vulkan_module/test/base/base.cpp",
+  "output": "E:/0_github_project/vulkan_module/build/CMakeFiles/base.dir/test/base/base.cpp.obj"
+}
+]

@@ -1,16 +1,18 @@
 If: # 收集信息的范围
-  PathMatch: [include/.*,src/.*,test/.*,example/*] # to all headers...
+  PathMatch: [include/.*,src/.*,test/.*,example/.*,config/.*] # to all headers...
   PathExclude: [include/llvm-c/.*,plugin/.*] # except those under include/llvm-c/
 
 CompileFlags: # Tweak the parse settings
   # List of flags to append to the compile command.d
   Add: [
-    -xc++, -Wall,-std=c++23,-Wno-missing-braces
+     -Wall,-Wno-missing-braces
     # ,-std=gnu++20
   ] # treat all files as C++, enable more warnings
   # Remove: -W* # strip all other warning-related flags
   # 全局移除编译参数:Clangd 无法解析的命令参数如下：
-  Remove: [-fmodules-ts,-fdeps-format=p1689r5,-fmodule-mapper*]
+  # Remove: [-fmodules-ts,-fdeps-format=p1689r5,-fmodule-mapper*]
+
+
 
 Diagnostics:
   ClangTidy:
@@ -42,7 +44,7 @@ Diagnostics:
     CheckOptions:
       readability-identifier-length.MinimumParameterNameLength: 1
       readability-identifier-length.MinimumVariableNameLength: 1 #变量的长度限制激活，默认至少3各字符
-      readability-identifier-naming.VariableCase: camelBack
+      readability-identifier-naming.VariableCase: camelBack,lower_case
       readability-identifier-naming.GlobalVariableCase: lower_case
       readability-identifier-naming.GlobalVariablePrefix: g_
       readability-identifier-naming.PrivateMemberSuffix: _
@@ -59,13 +61,13 @@ Diagnostics:
       # 常量
       readability-identifier-naming.ConstantCase: lower_case
       readability-identifier-naming.ConstantPrefix: k_
-      readability-identifier-naming.EnumCase: UPPER_CASE
+      readability-identifier-naming.EnumCase: UPPER_CASE,lower_case
       readability-identifier-naming.EnumConstantCase: UPPER_CASE
       # 宏定义
       readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
       # 类
       readability-identifier-naming.ClassCase: CamelCase
-      readability-identifier-naming.StructCase: CamelCase
+      readability-identifier-naming.StructCase: lower_case
       # 函数方法
       readability-identifier-naming.FunctionCase: lower_case
       readability-identifier-naming.ClassMethodCase: camelBack
@@ -90,12 +92,19 @@ Index:
   Background: Skip     # Disable slow background indexing of these files.
 
 # https://clangd.llvm.org/config#completion
+Completion:
+  AllScopes: Yes
+  ArgumentLists: FullPlaceholders
+  HeaderInsertion: Never  # 改为 Never 禁用自动头文件插入
+  CodePatterns: All
+
 InlayHints:
-  BlockEnd: No
-  Designators: Yes
-  Enabled: Yes
-  ParameterNames: Yes
-  DeducedTypes: Yes
+  BlockEnd: false
+  Designators: true
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
+  DefaultArguments: false
   TypeNameLimit: 24
 # 悬停卡
 Hover:

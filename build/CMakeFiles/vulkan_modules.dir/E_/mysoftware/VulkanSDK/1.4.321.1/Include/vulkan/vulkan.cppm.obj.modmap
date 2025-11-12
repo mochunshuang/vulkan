@@ -1,0 +1,2 @@
+-x c++-module
+-fmodule-output=CMakeFiles/vulkan_modules.dir/vulkan_hpp.pcm

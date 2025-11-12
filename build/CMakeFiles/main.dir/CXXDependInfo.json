@@ -1,0 +1,52 @@
+{
+	"bmi-installation" : null,
+	"compiler-frontend-variant" : "GNU",
+	"compiler-id" : "Clang",
+	"compiler-simulate-id" : "",
+	"config" : "Release",
+	"cxx-modules" : 
+	{
+		"CMakeFiles/main.dir/src/foo.cppm.obj" : 
+		{
+			"bmi-only" : false,
+			"destination" : null,
+			"name" : "CXX_MODULES",
+			"relative-directory" : "src",
+			"source" : "E:/0_github_project/vulkan_module/src/foo.cppm",
+			"type" : "CXX_MODULES",
+			"visibility" : "PUBLIC"
+		},
+		"CMakeFiles/main.dir/src/math.cppm.obj" : 
+		{
+			"bmi-only" : false,
+			"destination" : null,
+			"name" : "CXX_MODULES",
+			"relative-directory" : "src",
+			"source" : "E:/0_github_project/vulkan_module/src/math.cppm",
+			"type" : "CXX_MODULES",
+			"visibility" : "PUBLIC"
+		}
+	},
+	"database-info" : null,
+	"dir-cur-bld" : "E:/0_github_project/vulkan_module/build",
+	"dir-cur-src" : "E:/0_github_project/vulkan_module",
+	"dir-top-bld" : "E:/0_github_project/vulkan_module/build",
+	"dir-top-src" : "E:/0_github_project/vulkan_module",
+	"exports" : [],
+	"forward-modules-from-target-dirs" : [],
+	"include-dirs" : [],
+	"language" : "CXX",
+	"linked-target-dirs" : 
+	[
+		"E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx23.dir"
+	],
+	"module-dir" : "E:/0_github_project/vulkan_module/build/CMakeFiles/main.dir",
+	"sources" : 
+	{
+		"CMakeFiles/main.dir/src/main.cpp.obj" : 
+		{
+			"language" : "CXX",
+			"source" : "E:/0_github_project/vulkan_module/src/main.cpp"
+		}
+	}
+}

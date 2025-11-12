@@ -1,15 +1,34 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 4.2.0)
 
-project(mcsexec_test VERSION 0.1.0.0 LANGUAGES CXX)
+# First enable module
+# https://github.com/Kitware/CMake/blob/v4.2.0-rc2/Help/dev/experimental.rst
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
+set(CMAKE_CXX_MODULE_STD ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# .cmake
-include(cmake/host_system_information.cmake)
-include(cmake/output.cmake)
+# Set language version used
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+project("example"
+  LANGUAGES CXX
+)
+
+add_executable(main)
+target_sources(
+  main
+  PUBLIC
+  src/main.cpp
+  PUBLIC
+  FILE_SET CXX_MODULES
+  BASE_DIRS ${PROJECT_SOURCE_DIR}
+  FILES
+  src/math.cppm
+  src/foo.cppm
+)
+
 include(cmake/third_party.cmake)
-
-set(CMAKE_CXX_STANDARD 26) # 23够了，是为了测试26的包索引功能 gcc15才支持
-set(CMAKE_CXX_EXTENSIONS OFF) # 避免扩展 -std=gnu++23
-set(CMAKE_CXX_STANDARD_REQUIRED True) # 不支持 CMAKE_CXX_STANDARD 就报错
 
 # 添加测试
 #

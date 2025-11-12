@@ -1,0 +1,20 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "CMakeFiles\\base.dir\\test\\base\\base.cpp.obj",
+      "requires": [
+        {
+          "logical-name": "std"
+        },
+        {
+          "logical-name": "std.compat"
+        },
+        {
+          "logical-name": "vulkan_hpp"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}

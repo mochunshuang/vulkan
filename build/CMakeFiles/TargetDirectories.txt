@@ -1,0 +1,8 @@
+E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx23.dir
+E:/0_github_project/vulkan_module/build/CMakeFiles/__cmake_cxx26.dir
+E:/0_github_project/vulkan_module/build/CMakeFiles/main.dir
+E:/0_github_project/vulkan_module/build/CMakeFiles/vulkan_modules.dir
+E:/0_github_project/vulkan_module/build/CMakeFiles/base.dir
+E:/0_github_project/vulkan_module/build/CMakeFiles/test.dir
+E:/0_github_project/vulkan_module/build/CMakeFiles/edit_cache.dir
+E:/0_github_project/vulkan_module/build/CMakeFiles/rebuild_cache.dir

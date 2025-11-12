@@ -1,0 +1,7 @@
+ninja_dyndep_version = 1.0
+build CMakeFiles/__cmake_cxx23.dir/E_/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.cppm.obj | CMakeFiles/__cmake_cxx23.dir/std.pcm: dyndep
+  restat = 1
+
+build CMakeFiles/__cmake_cxx23.dir/E_/mysoftware/llvm-mingw-20250910-ucrt-x86_64/share/libc++/v1/std.compat.cppm.obj | CMakeFiles/__cmake_cxx23.dir/std.compat.pcm: dyndep | CMakeFiles/__cmake_cxx23.dir/std.pcm
+  restat = 1
+
