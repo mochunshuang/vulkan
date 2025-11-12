@@ -24,7 +24,7 @@ function(auto_add_vulkan_module dir_name)
 
         # 添加测试
         add_test(NAME "${target_name}" COMMAND $<TARGET_FILE:${target_name}>)
-        target_link_libraries(${target_name} PRIVATE glm_dep glfw_dep vulkan_dep tinyobjloader_dep tinygltf_dep)
+        target_link_libraries(${target_name} PRIVATE vulkan_modules glm glfw stb tinygltf)
 
         # 打印信息（可选）
         message(STATUS "[Added test]: ${target_name} from ${test_file}")

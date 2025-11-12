@@ -10,34 +10,8 @@ add_executable(base)
 target_sources(
     base
     PRIVATE
-    "E:/0_github_project/vulkan_module/test/base/base.cpp"
+    "test/base/base.cpp"
 )
+target_link_libraries(base PRIVATE vulkan_modules)
 
-# target_compile_features(base PRIVATE cxx_std_23)
-# target_sources(base
-# PUBLIC
-# FILE_SET CXX_MODULES
-# BASE_DIRS ${VULKAN_SDK_DIR}
-# FILES
-# "${VULKAN_SDK_DIR}/vulkan/vulkan.cppm"
-# )
-# target_include_directories(base
-# PUBLIC
-# "${VULKAN_SDK_DIR}"
-# )
-
-# 然后单独添加模块文件集
-# add_library(vulkan_modules OBJECT)
-# target_sources(vulkan_modules
-# PUBLIC
-# FILE_SET CXX_MODULES
-# BASE_DIRS ${VULKAN_SDK_DIR}
-# FILES
-# "${VULKAN_SDK_DIR}/vulkan/vulkan.cppm"
-# )
-# target_compile_features(vulkan_modules PRIVATE cxx_std_23)
-# target_include_directories(vulkan_modules
-# PUBLIC
-# "${VULKAN_SDK_DIR}"
-# )
-target_link_libraries(base vulkan_modules)
+auto_add_vulkan_module("vulkan")

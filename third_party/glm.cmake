@@ -7,12 +7,11 @@
 # cd ../..
 # git add .
 # git commit -m "Add glm submodule at tag 1.0.2"
-set(GLM_SOURCE_DIR "${CMAKE_SOURCE_DIR}/dependency/glm-1.0.2")
-set(GLM_BUILD_DIR "${CMAKE_SOURCE_DIR}/depend_build/glm-1.0.2")
 
-# 确保 GLM 被构建为仅头文件模式
-set(GLM_BUILD_LIBRARY OFF CACHE BOOL "Build GLM as library" FORCE)
-add_subdirectory(${GLM_SOURCE_DIR} ${GLM_BUILD_DIR})
+add_library(glm INTERFACE)
+set(GLM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glm-1.0.2)
+target_sources(glm INTERFACE ${GLM_DIR}/glm/glm.hpp)
+target_include_directories(glm SYSTEM INTERFACE ${GLM_DIR})
 add_library(glm_dep ALIAS glm)
 
 # NOTE: 删除

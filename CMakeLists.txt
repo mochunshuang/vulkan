@@ -28,7 +28,8 @@ target_sources(
   src/foo.cppm
 )
 
-include(cmake/third_party.cmake)
+include(cmake/vulkan_modules.cmake)
+add_subdirectory(third_party)
 
 # 添加测试
 #
