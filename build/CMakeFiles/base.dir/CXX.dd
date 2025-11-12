@@ -1,3 +1,0 @@
-ninja_dyndep_version = 1.0
-build CMakeFiles/base.dir/test/base/base.cpp.obj: dyndep | CMakeFiles/__cmake_cxx23.dir/std.pcm CMakeFiles/__cmake_cxx23.dir/std.compat.pcm CMakeFiles/vulkan_modules.dir/vulkan_hpp.pcm
-
