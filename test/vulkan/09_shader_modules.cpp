@@ -330,24 +330,31 @@ class HelloTriangleApplication
 
     void createGraphicsPipeline()
     {
+        // NOTE: 着色器模块创建
         vk::raii::ShaderModule shaderModule =
             createShaderModule(readFile("shaders/09_shader_base_slang.spv"));
 
+        // 配置阶段的描述信息
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
-            .stage = vk::ShaderStageFlagBits::eVertex,
+            .stage = vk::ShaderStageFlagBits::eVertex, // 顶点着色阶段
             .module = shaderModule,
-            .pName = "vertMain"};
+            .pName = "vertMain"}; // NOTE: 09_shader_base_slang.slang 顶点入口函数
         vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
-            .stage = vk::ShaderStageFlagBits::eFragment,
-            .module = shaderModule,
+            .stage = vk::ShaderStageFlagBits::eFragment, // 片段着色阶段
+            .module = shaderModule, // 指定绑定到的 着色器模块
             .pName = "fragMain"};
+        // NOTE: 着色器阶段创建：只有两个
         vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
                                                             fragShaderStageInfo};
+
+        // NOTE: 这就是描述管道的可编程阶段的全部内容. 这里仅仅配置两个
     }
 
+    // NOTE: 创建着色器模块
     [[nodiscard]] vk::raii::ShaderModule createShaderModule(
         const std::vector<char> &code) const
     {
+        // 创建一个着色器模块很简单，我们只需要用字节码和它的长度指定一个指向缓冲区的指针
         vk::ShaderModuleCreateInfo createInfo{
             .codeSize = code.size() * sizeof(char),
             .pCode = reinterpret_cast<const uint32_t *>(code.data())};
@@ -440,12 +447,16 @@ class HelloTriangleApplication
 
     static std::vector<char> readFile(const std::string &filename)
     {
+        // ate：在文件末尾开始读取
+        // binary：将文件作为二进制文件读取（避免文本转换）
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
         if (!file.is_open())
         {
             throw std::runtime_error("failed to open file!");
         }
+        // 在文件末尾开始读取的好处是我们可以使用读取位置来确定文件的大小并分配一个缓冲区：
         std::vector<char> buffer(file.tellg());
+        // 之后，我们可以回到文件的开头并一次读取所有字节：
         file.seekg(0, std::ios::beg);
         file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
         file.close();
@@ -453,10 +464,23 @@ class HelloTriangleApplication
     }
 };
 
+/*
+[顶点着色器]处理每个输入的顶点。
+它以世界坐标位置、颜色、法线和纹理坐标等属性作为输入。
+其输出是裁剪空间中的最终位置，以及需要传递给片段着色器的属性，如颜色和纹理坐标。
+随后，这些值将由[光栅化器]在各个片段之间进行插值，以生成平滑的渐变效果。
+
+裁剪坐标是来自顶点着色器（vertex
+shader）的四维向量，后续会通过将整个向量除以其最后一个分量，转换为标准化设备坐标（normalized
+device coordinate）。这些标准化设备坐标属于齐次坐标（homogeneous
+coordinates），它们会将帧缓冲区（framebuffer）映射到一个[-1, 1] × [-1,1]的坐标系
+//NOTE: 中心点从 [x,y] -> [0,0]
+*/
 int main()
 {
     try
     {
+        // NOTE: 生成一个SPIR-V二进制文件并将其加载到程序中
         HelloTriangleApplication app;
         app.run();
     }
