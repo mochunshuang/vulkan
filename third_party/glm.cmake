@@ -8,11 +8,20 @@
 # git add .
 # git commit -m "Add glm submodule at tag 1.0.2"
 
-add_library(glm INTERFACE)
 set(GLM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glm-1.0.2)
-target_sources(glm INTERFACE ${GLM_DIR}/glm/glm.hpp)
-target_include_directories(glm SYSTEM INTERFACE ${GLM_DIR})
-add_library(glm_dep ALIAS glm)
+add_library(glm_modules STATIC)
+target_sources(glm_modules
+    PUBLIC
+    FILE_SET CXX_MODULES
+    BASE_DIRS ${GLM_DIR}
+    FILES
+    "${GLM_DIR}/glm/glm.cppm"
+)
+target_include_directories(glm_modules
+    PUBLIC
+    "${GLM_DIR}"
+)
+target_compile_features(glm_modules PRIVATE cxx_std_23)
 
 # NOTE: 删除
 # rm -rf third_party/glm-1.0.2
