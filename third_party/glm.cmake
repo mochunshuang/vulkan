@@ -23,6 +23,9 @@ target_include_directories(glm_modules
 )
 target_compile_features(glm_modules PRIVATE cxx_std_23)
 
+# @see glm/glm.cppm
+target_compile_definitions(glm_modules PRIVATE GLM_GTC_INLINE_NAMESPACE GLM_EXT_INLINE_NAMESPACE GLM_GTX_INLINE_NAMESPACE)
+
 # NOTE: 删除
 # rm -rf third_party/glm-1.0.2
 # git rm --cached third_party/glm-1.0.2
