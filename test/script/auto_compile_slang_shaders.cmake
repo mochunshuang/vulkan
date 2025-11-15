@@ -26,7 +26,7 @@ macro(add_compile_slang_shader TARGET_NAME input_file out_file entry_points)
 
         # 依赖 SHADER_OUTPUT_DIR
         DEPENDS ${SHADER_OUTPUT_DIR}
-        COMMENT "Compiling Slang shader: ${SHADER_SOURCE}"
+        COMMENT "Compiling Slang shader: ${shader_name}"
         VERBATIM
     )
 endmacro()

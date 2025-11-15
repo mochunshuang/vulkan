@@ -22,6 +22,9 @@ if(MODULE_ENABLE)
 
     # for <cstdlib>
     target_compile_definitions(vulkan_modules PUBLIC EXIT_SUCCESS=0 EXIT_FAILURE=1)
+
+    # 添加 Vulkan 库链接
+    target_link_libraries(vulkan_modules PUBLIC "${VULKAN_SDK_DIR}/Lib/vulkan-1.lib")
 else()
     add_library(vulkan_dep STATIC IMPORTED)
     set_target_properties(vulkan_dep PROPERTIES
