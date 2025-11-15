@@ -1,16 +1,16 @@
 #include <algorithm>
 #include <array>
-#include <assert.h>
+#include <cassert>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <limits>
 #include <memory>
-#include <optional>
 #include <stdexcept>
 #include <vector>
+
+// NOLINTBEGIN
 
 #if defined(__ANDROID__)
 #define PLATFORM_ANDROID 1
@@ -764,7 +764,7 @@ class VulkanApplication
     void createGraphicsPipeline()
     {
         vk::raii::ShaderModule shaderModule =
-            createShaderModule(this->readFile("shaders/slang.spv"));
+            createShaderModule(this->readFile("shaders/27_shader_depth.spv"));
 
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
@@ -1911,3 +1911,4 @@ int main()
     return EXIT_SUCCESS;
 }
 #endif
+// NOLINTEND
