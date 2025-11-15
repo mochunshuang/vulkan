@@ -21,3 +21,17 @@ auto_compile_slang_shaders(
     ${CMAKE_SOURCE_DIR}/test/vulkan/shaders
     ${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders
 )
+file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/textures
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan
+    FILES_MATCHING PATTERN "*")
+file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/models
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan
+    FILES_MATCHING PATTERN "*")
+
+set(COMP_ENTRY_POINTS -entry vertMain -entry fragMain -entry compMain)
+add_compile_slang_shader(
+    31_shader_compute_replace
+    "${CMAKE_SOURCE_DIR}/test/vulkan/shaders/31_shader_compute.slang"
+    "${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders/31_shader_compute.spv"
+    "${COMP_ENTRY_POINTS}"
+)

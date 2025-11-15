@@ -1,5 +1,6 @@
-import std;
-import std.compat;
+#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
+#include <GLFW/glfw3.h>
+
 #include <cassert>
 
 #if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
@@ -7,9 +8,8 @@ import std.compat;
 #else
 import vulkan_hpp;
 #endif
-
-#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
-#include <GLFW/glfw3.h>
+import std;
+import std.compat;
 
 // NOLINTBEGIN
 constexpr uint32_t WIDTH = 800;
@@ -332,16 +332,16 @@ class HelloTriangleApplication
     {
         // NOTE: 着色器模块创建
         vk::raii::ShaderModule shaderModule =
-            createShaderModule(readFile("shaders/09_shader_base_slang.spv"));
+            createShaderModule(readFile("shaders/09_shader_base.spv"));
 
         // 配置阶段的描述信息
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
             .stage = vk::ShaderStageFlagBits::eVertex, // 顶点着色阶段
             .module = shaderModule,
-            .pName = "vertMain"}; // NOTE: 09_shader_base_slang.slang 顶点入口函数
+            .pName = "vertMain"}; // NOTE: 09_shader_base.slang 顶点入口函数
         vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
             .stage = vk::ShaderStageFlagBits::eFragment, // 片段着色阶段
-            .module = shaderModule, // 指定绑定到的 着色器模块
+            .module = shaderModule,                      // 指定绑定到的 着色器模块
             .pName = "fragMain"};
         // NOTE: 着色器阶段创建：只有两个
         vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,

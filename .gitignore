@@ -2,3 +2,4 @@ dependencies/
 cache
 build
 output/*
+.cache/

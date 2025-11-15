@@ -1,4 +1,5 @@
-
+#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
+#include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -7,23 +8,32 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include <cassert>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
-#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
-#include <GLFW/glfw3.h>
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <random>
+#include <stdexcept>
+#include <vector>
 
 #if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
 #include <vulkan/vulkan_raii.hpp>
 #else
 import vulkan_hpp;
 #endif
-import std;
-import std.compat;
 
 // NOLINTBEGIN
-
 constexpr uint32_t WIDTH = 800;
 constexpr uint32_t HEIGHT = 600;
+constexpr uint32_t PARTICLE_COUNT = 8192;
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<char const *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -34,42 +44,55 @@ constexpr bool enableValidationLayers = false;
 constexpr bool enableValidationLayers = true;
 #endif
 
-struct Vertex
+struct UniformBufferObject
 {
-    glm::vec2 pos;
-    glm::vec3 color;
+    float deltaTime = 1.0f;
+};
+
+// NOTE: 1. 粒子：每个粒子都有一个位置和速度值
+// 要想要设计着色器，不必指定SSBO中的元素数量是优势之一
+struct Particle
+{
+    glm::vec2 position;
+    glm::vec2 velocity;
+    glm::vec4 color;
 
     static vk::VertexInputBindingDescription getBindingDescription()
     {
-        return {0, sizeof(Vertex), vk::VertexInputRate::eVertex};
+        return {0, sizeof(Particle), vk::VertexInputRate::eVertex};
     }
 
     static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions()
     {
-        return {vk::VertexInputAttributeDescription(0, 0, vk::Format::eR32G32Sfloat,
-                                                    offsetof(Vertex, pos)),
-                vk::VertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat,
-                                                    offsetof(Vertex, color))};
+        return {
+            vk::VertexInputAttributeDescription(0, 0, vk::Format::eR32G32Sfloat,
+                                                offsetof(Particle, position)),
+            vk::VertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32A32Sfloat,
+                                                offsetof(Particle, color)),
+        };
     }
 };
 
-// NOTE: 1. 描述符有许多类型，这里 我们将使用统一缓冲区对象（UBO）
-// 在C++侧定义UBO，并在顶点着色器中告诉Vulkan这个描述符
-struct UniformBufferObject
-{
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-};
+/*
+//NOTE: 2. 可以存储图像
+存储图像允许您读取和写入图像。典型的用例是将图像效果应用于纹理、进行后处理（这又非常相似）或生成mip贴图。
+vk::ImageCreateInfo imageInfo {};
+...
+imageInfo.usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage;
+...
 
-const std::vector<Vertex> vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                                      {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                                      {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                                      {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+textureImage = std::make_unique<vk::raii::SwapchainKHR>( *device, swapChainCreateInfo );
 
-const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
+//对应slang
+[vk::image_format("r32f")] Texture2D<float> inputImage;
+[vk::image_format("r32f")] RWTexture2D<float> outputImage;
 
-class HelloTriangleApplication
+在计算着色器中读取和写入存储图像进行数组查找语法：
+float3 pixel = inputImage[int2(gl_GlobalInvocationID.xy)].rgb;
+outputImage[int2(gl_GlobalInvocationID.xy)] = pixel;
+*/
+
+class ComputeShaderApplication
 {
   public:
     void run()
@@ -96,31 +119,38 @@ class HelloTriangleApplication
     vk::Extent2D swapChainExtent;
     std::vector<vk::raii::ImageView> swapChainImageViews;
 
-    // NOTE: 3. 所有描述符绑定都组合成一个VkDescriptorSetLayout对象
-    vk::raii::DescriptorSetLayout descriptorSetLayout = nullptr;
     vk::raii::PipelineLayout pipelineLayout = nullptr;
     vk::raii::Pipeline graphicsPipeline = nullptr;
 
-    vk::raii::Buffer vertexBuffer = nullptr;
-    vk::raii::DeviceMemory vertexBufferMemory = nullptr;
-    vk::raii::Buffer indexBuffer = nullptr;
-    vk::raii::DeviceMemory indexBufferMemory = nullptr;
+    vk::raii::DescriptorSetLayout computeDescriptorSetLayout = nullptr;
+    vk::raii::PipelineLayout computePipelineLayout = nullptr;
+    vk::raii::Pipeline computePipeline = nullptr;
 
-    // NOTE: 5. 统一缓冲区
+    // NOTE: 5. 准备着色器存储缓冲区
+    std::vector<vk::raii::Buffer> shaderStorageBuffers;
+    std::vector<vk::raii::DeviceMemory> shaderStorageBuffersMemory;
+
     std::vector<vk::raii::Buffer> uniformBuffers;
     std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
     std::vector<void *> uniformBuffersMapped;
 
+    vk::raii::DescriptorPool descriptorPool = nullptr;
+    std::vector<vk::raii::DescriptorSet> computeDescriptorSets;
+
     vk::raii::CommandPool commandPool = nullptr;
     std::vector<vk::raii::CommandBuffer> commandBuffers;
+    std::vector<vk::raii::CommandBuffer> computeCommandBuffers;
 
-    std::vector<vk::raii::Semaphore> presentCompleteSemaphore;
-    std::vector<vk::raii::Semaphore> renderFinishedSemaphore;
+    vk::raii::Semaphore semaphore = nullptr;
+    uint64_t timelineValue = 0;
     std::vector<vk::raii::Fence> inFlightFences;
-    uint32_t semaphoreIndex = 0;
     uint32_t currentFrame = 0;
 
+    double lastFrameTime = 0.0;
+
     bool framebufferResized = false;
+
+    double lastTime = 0.0f;
 
     std::vector<const char *> requiredDeviceExtension = {
         vk::KHRSwapchainExtensionName, vk::KHRSpirv14ExtensionName,
@@ -136,12 +166,14 @@ class HelloTriangleApplication
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+        lastTime = glfwGetTime();
     }
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height)
     {
         auto app =
-            static_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
+            static_cast<ComputeShaderApplication *>(glfwGetWindowUserPointer(window));
         app->framebufferResized = true;
     }
 
@@ -154,13 +186,16 @@ class HelloTriangleApplication
         createLogicalDevice();
         createSwapChain();
         createImageViews();
-        createDescriptorSetLayout();
+        createComputeDescriptorSetLayout();
         createGraphicsPipeline();
+        createComputePipeline();
         createCommandPool();
-        createVertexBuffer();
-        createIndexBuffer();
+        createShaderStorageBuffers();
         createUniformBuffers();
+        createDescriptorPool();
+        createComputeDescriptorSets();
         createCommandBuffers();
+        createComputeCommandBuffers();
         createSyncObjects();
     }
 
@@ -170,6 +205,11 @@ class HelloTriangleApplication
         {
             glfwPollEvents();
             drawFrame();
+            // We want to animate the particle system using the last frames time to get
+            // smooth, frame-rate independent animation
+            double currentTime = glfwGetTime();
+            lastFrameTime = (currentTime - lastTime) * 1000.0;
+            lastTime = currentTime;
         }
 
         device.waitIdle();
@@ -181,7 +221,7 @@ class HelloTriangleApplication
         swapChain = nullptr;
     }
 
-    void cleanup()
+    void cleanup() const
     {
         glfwDestroyWindow(window);
 
@@ -323,16 +363,18 @@ class HelloTriangleApplication
                 });
 
             auto features = device.template getFeatures2<
-                vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
-                vk::PhysicalDeviceVulkan13Features,
-                vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
+                vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features,
+                vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
+                vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR>();
             bool supportsRequiredFeatures =
-                features.template get<vk::PhysicalDeviceVulkan11Features>()
-                    .shaderDrawParameters &&
+                features.template get<vk::PhysicalDeviceFeatures2>()
+                    .features.samplerAnisotropy &&
                 features.template get<vk::PhysicalDeviceVulkan13Features>()
                     .dynamicRendering &&
                 features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>()
-                    .extendedDynamicState;
+                    .extendedDynamicState &&
+                features.template get<vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR>()
+                    .timelineSemaphore;
 
             return supportsVulkan1_3 && supportsGraphics &&
                    supportsAllRequiredExtensions && supportsRequiredFeatures;
@@ -352,12 +394,16 @@ class HelloTriangleApplication
         std::vector<vk::QueueFamilyProperties> queueFamilyProperties =
             physicalDevice.getQueueFamilyProperties();
 
-        // get the first index into queueFamilyProperties which supports both graphics and
-        // present
+        // NOTE: 3. 计算队列族.计算使用队列族属性标志位vk::QueueFlagBits::eCompute
+        //  get the first index into queueFamilyProperties which supports both graphics
+        //  and present
         for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++)
         {
+            // 查找同时支持图形和计算的队列族
             if ((queueFamilyProperties[qfpIndex].queueFlags &
                  vk::QueueFlagBits::eGraphics) &&
+                (queueFamilyProperties[qfpIndex].queueFlags &
+                 vk::QueueFlagBits::eCompute) && // NOTE: 计算队列族
                 physicalDevice.getSurfaceSupportKHR(qfpIndex, *surface))
             {
                 // found a queue family that supports both graphics and present
@@ -371,18 +417,20 @@ class HelloTriangleApplication
                 "Could not find a queue for graphics and present -> terminating");
         }
 
-        // query for required features (Vulkan 1.1 and 1.3)
+        // query for Vulkan 1.3 features
         vk::StructureChain<vk::PhysicalDeviceFeatures2,
-                           vk::PhysicalDeviceVulkan11Features,
                            vk::PhysicalDeviceVulkan13Features,
-                           vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
+                           vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
+                           // NOTE: 18. 我们使用时间线内部同步 GPU之间数据的关系
+                           vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR>
             featureChain = {
-                {},                             // vk::PhysicalDeviceFeatures2
-                {.shaderDrawParameters = true}, // vk::PhysicalDeviceVulkan11Features
+                {.features = {.samplerAnisotropy = true}}, // vk::PhysicalDeviceFeatures2
                 {.synchronization2 = true,
                  .dynamicRendering = true}, // vk::PhysicalDeviceVulkan13Features
                 {.extendedDynamicState =
-                     true} // vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+                     true}, // vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+                {.timelineSemaphore =
+                     true} // vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR
             };
 
         // create a Device
@@ -435,6 +483,10 @@ class HelloTriangleApplication
         vk::ImageViewCreateInfo imageViewCreateInfo{
             .viewType = vk::ImageViewType::e2D,
             .format = swapChainSurfaceFormat.format,
+            .components = {vk::ComponentSwizzle::eIdentity,
+                           vk::ComponentSwizzle::eIdentity,
+                           vk::ComponentSwizzle::eIdentity,
+                           vk::ComponentSwizzle::eIdentity},
             .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
         for (auto image : swapChainImages)
         {
@@ -443,24 +495,32 @@ class HelloTriangleApplication
         }
     }
 
-    // NOTE: 2. 创建描述符集布局
-    void createDescriptorSetLayout()
+    // NOTE: 7. 创建 描述符
+    void createComputeDescriptorSetLayout()
     {
-        vk::DescriptorSetLayoutBinding uboLayoutBinding{
-            .binding = 0,
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1,                           // 数组大小
-            .stageFlags = vk::ShaderStageFlagBits::eVertex, // 将在哪个着色器阶段被引用
-            .pImmutableSamplers = nullptr}; // 仅与图像采样相关的描述符相关
-        vk::DescriptorSetLayoutCreateInfo layoutInfo{.bindingCount = 1,
-                                                     .pBindings = &uboLayoutBinding};
-        descriptorSetLayout = vk::raii::DescriptorSetLayout(device, layoutInfo);
+        // 唯一的区别是描述符需要设置vk::ShaderStageFlagBits::eCompute
+        std::array layoutBindings{
+            vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1,
+                                           vk::ShaderStageFlagBits::eCompute, nullptr),
+            vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eStorageBuffer, 1,
+                                           vk::ShaderStageFlagBits::eCompute, nullptr),
+            vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eStorageBuffer, 1,
+                                           vk::ShaderStageFlagBits::eCompute, nullptr)};
+        // 你可能想知道为什么我们对着色器存储缓冲区对象有两个布局绑定，即使我们只渲染一个粒子系统。
+        // 这是因为粒子位置是根据增量时间逐帧更新的。这意味着每一帧都需要知道最后一帧的粒子位置，
+        // 这样它就可以用新的增量时间更新它们并将它们写入自己的SSBO
+        // https://docs.vulkan.org/tutorial/latest/11_Compute_Shader.html#_data_manipulation:~:text=%E5%85%A5%E8%87%AA%E5%B7%B1%E7%9A%84-,SSBO,-%EF%BC%9A
+        vk::DescriptorSetLayoutCreateInfo layoutInfo{
+            .bindingCount = static_cast<uint32_t>(layoutBindings.size()),
+            .pBindings = layoutBindings.data()};
+        computeDescriptorSetLayout = vk::raii::DescriptorSetLayout(device, layoutInfo);
     }
 
     void createGraphicsPipeline()
     {
+        // NOTE: 4. 加载计算着色器
         vk::raii::ShaderModule shaderModule =
-            createShaderModule(readFile("shaders/22_shader_ubo.spv"));
+            createShaderModule(readFile("shaders/31_shader_compute.spv"));
 
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
@@ -473,8 +533,9 @@ class HelloTriangleApplication
         vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
                                                             fragShaderStageInfo};
 
-        auto bindingDescription = Vertex::getBindingDescription();
-        auto attributeDescriptions = Vertex::getAttributeDescriptions();
+        auto bindingDescription = Particle::getBindingDescription();
+        auto attributeDescriptions = Particle::getAttributeDescriptions();
+
         vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
             .vertexBindingDescriptionCount = 1,
             .pVertexBindingDescriptions = &bindingDescription,
@@ -482,10 +543,10 @@ class HelloTriangleApplication
                 static_cast<uint32_t>(attributeDescriptions.size()),
             .pVertexAttributeDescriptions = attributeDescriptions.data()};
         vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
-            .topology = vk::PrimitiveTopology::eTriangleList};
+            .topology = vk::PrimitiveTopology::ePointList,
+            .primitiveRestartEnable = vk::False};
         vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1,
                                                           .scissorCount = 1};
-
         vk::PipelineRasterizationStateCreateInfo rasterizer{
             .depthClampEnable = vk::False,
             .rasterizerDiscardEnable = vk::False,
@@ -493,18 +554,23 @@ class HelloTriangleApplication
             .cullMode = vk::CullModeFlagBits::eBack,
             .frontFace = vk::FrontFace::eCounterClockwise,
             .depthBiasEnable = vk::False,
-            .depthBiasSlopeFactor = 1.0f,
             .lineWidth = 1.0f};
-
         vk::PipelineMultisampleStateCreateInfo multisampling{
             .rasterizationSamples = vk::SampleCountFlagBits::e1,
             .sampleShadingEnable = vk::False};
 
         vk::PipelineColorBlendAttachmentState colorBlendAttachment{
-            .blendEnable = vk::False,
+            .blendEnable = vk::True,
+            .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+            .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+            .colorBlendOp = vk::BlendOp::eAdd,
+            .srcAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+            .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+            .alphaBlendOp = vk::BlendOp::eAdd,
             .colorWriteMask =
                 vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+                vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+        };
 
         vk::PipelineColorBlendStateCreateInfo colorBlending{.logicOpEnable = vk::False,
                                                             .logicOp = vk::LogicOp::eCopy,
@@ -518,12 +584,7 @@ class HelloTriangleApplication
             .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
             .pDynamicStates = dynamicStates.data()};
 
-        // NOTE: 4. 在管道创建期间指定描述符集布局，以告诉Vulkan着色器将使用哪些描述符
-        vk::PipelineLayoutCreateInfo pipelineLayoutInfo{.setLayoutCount = 1,
-                                                        .pSetLayouts =
-                                                            &*descriptorSetLayout,
-                                                        .pushConstantRangeCount = 0};
-
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
         pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
         vk::StructureChain<vk::GraphicsPipelineCreateInfo,
@@ -548,17 +609,69 @@ class HelloTriangleApplication
             pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
     }
 
+    // NOTE: 11. 计算管道.
+    void createComputePipeline()
+    {
+        vk::raii::ShaderModule shaderModule =
+            createShaderModule(readFile("shaders/31_shader_compute.spv"));
+
+        // 我们只需要一个着色器阶段和一个管道布局
+        vk::PipelineShaderStageCreateInfo computeShaderStageInfo{
+            .stage = vk::ShaderStageFlagBits::eCompute,
+            .module = shaderModule,
+            .pName = "compMain"};
+        // 由于计算管道不接触任何光栅化状态，它的状态比图形管道少得多
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
+            .setLayoutCount = 1, .pSetLayouts = &*computeDescriptorSetLayout};
+        computePipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
+        vk::ComputePipelineCreateInfo pipelineInfo{.stage = computeShaderStageInfo,
+                                                   .layout = *computePipelineLayout};
+        computePipeline = vk::raii::Pipeline(device, nullptr, pipelineInfo);
+
+        // NOTE: 12. 计算空间
+        // 定义了一个抽象执行模型，用于GPU的计算硬件如何在三维（x、y和z）中处理计算工作负载
+        // 工作组定义GPU的计算硬件如何形成和处理计算工作负载。
+        // 工作组的维数（由computeCommandBuffers[currentFrame]→dispatch定义）和调用（由计算着色器中的本地大小定义）取决于输入数据的结构。
+
+        // NOTE:13. 计算着色器: [numthreads(256,1,1)]
+        // [numthreads(x,y,z)]中为x维度指定一个数字
+        // 例如：如果我们分派一个工作组计数为[64,1,1]，计算着色器本地大小为[32,32,1]，我们的计算着色器将被调用64
+        // x 32 x 32=65,536次。
+    }
+
     void createCommandPool()
     {
-        vk::CommandPoolCreateInfo poolInfo{
-            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-            .queueFamilyIndex = queueIndex};
+        vk::CommandPoolCreateInfo poolInfo{};
+        poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+        poolInfo.queueFamilyIndex = queueIndex;
         commandPool = vk::raii::CommandPool(device, poolInfo);
     }
 
-    void createVertexBuffer()
+    // NOTE: 创建着色器存储缓冲区
+    void createShaderStorageBuffers()
     {
-        vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+        // Initialize particles
+        std::default_random_engine rndEngine(static_cast<unsigned>(time(nullptr)));
+        std::uniform_real_distribution rndDist(0.0f, 1.0f);
+
+        // Initial particle positions on a circle
+        std::vector<Particle> particles(PARTICLE_COUNT);
+        for (auto &particle : particles)
+        {
+            float r = 0.25f * sqrtf(rndDist(rndEngine));
+            float theta = rndDist(rndEngine) * 2.0f * 3.14159265358979323846f;
+            float x = r * cosf(theta) * HEIGHT / WIDTH;
+            float y = r * sinf(theta);
+            particle.position = glm::vec2(x, y);
+            particle.velocity = normalize(glm::vec2(x, y)) * 0.00025f;
+            particle.color = glm::vec4(rndDist(rndEngine), rndDist(rndEngine),
+                                       rndDist(rndEngine), 1.0f);
+        }
+
+        vk::DeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
+
+        // Create a staging buffer used to upload data to the gpu
+        // NOTE: 创建一个暂存缓冲区来保存初始粒子属性
         vk::raii::Buffer stagingBuffer({});
         vk::raii::DeviceMemory stagingBufferMemory({});
         createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc,
@@ -567,42 +680,32 @@ class HelloTriangleApplication
                      stagingBuffer, stagingBufferMemory);
 
         void *dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
-        memcpy(dataStaging, vertices.data(), bufferSize);
+        memcpy(dataStaging, particles.data(), (size_t)bufferSize);
         stagingBufferMemory.unmapMemory();
 
-        createBuffer(bufferSize,
-                     vk::BufferUsageFlagBits::eTransferDst |
-                         vk::BufferUsageFlagBits::eVertexBuffer,
-                     vk::MemoryPropertyFlagBits::eDeviceLocal, vertexBuffer,
-                     vertexBufferMemory);
+        // NOTE: 5. 清除这些向量.我们主需要给GPU初始输入
+        shaderStorageBuffers.clear();
+        shaderStorageBuffersMemory.clear();
 
-        copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+        // NOTE: 复制到存储缓冲区中
+        //  Copy initial particle data to all storage buffers
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            vk::raii::Buffer shaderStorageBufferTemp({});
+            vk::raii::DeviceMemory shaderStorageBufferTempMemory({});
+            createBuffer(bufferSize,
+                         vk::BufferUsageFlagBits::eStorageBuffer |
+                             vk::BufferUsageFlagBits::eVertexBuffer |
+                             vk::BufferUsageFlagBits::eTransferDst,
+                         vk::MemoryPropertyFlagBits::eDeviceLocal,
+                         shaderStorageBufferTemp, shaderStorageBufferTempMemory);
+            copyBuffer(stagingBuffer, shaderStorageBufferTemp, bufferSize);
+            shaderStorageBuffers.emplace_back(std::move(shaderStorageBufferTemp));
+            shaderStorageBuffersMemory.emplace_back(
+                std::move(shaderStorageBufferTempMemory));
+        }
     }
 
-    void createIndexBuffer()
-    {
-        vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-        vk::raii::Buffer stagingBuffer({});
-        vk::raii::DeviceMemory stagingBufferMemory({});
-        createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc,
-                     vk::MemoryPropertyFlagBits::eHostVisible |
-                         vk::MemoryPropertyFlagBits::eHostCoherent,
-                     stagingBuffer, stagingBufferMemory);
-
-        void *data = stagingBufferMemory.mapMemory(0, bufferSize);
-        memcpy(data, indices.data(), (size_t)bufferSize);
-        stagingBufferMemory.unmapMemory();
-
-        createBuffer(
-            bufferSize,
-            vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
-            vk::MemoryPropertyFlagBits::eDeviceLocal, indexBuffer, indexBufferMemory);
-
-        copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-    }
-
-    // NOTE: 6. 分配统一缓冲区。并映射
     void createUniformBuffers()
     {
         uniformBuffers.clear();
@@ -618,12 +721,6 @@ class HelloTriangleApplication
                          vk::MemoryPropertyFlagBits::eHostVisible |
                              vk::MemoryPropertyFlagBits::eHostCoherent,
                          buffer, bufferMem);
-
-            /*
-            缓冲区在应用程序的整个生命周期内保持映射到该指针。
-            这种技术称为“持久映射”，适用于所有Vulkan实现。
-            每次我们需要更新缓冲区时不必映射它会提高性能，因为映射不是免费的。
-            */
             uniformBuffers.emplace_back(std::move(buffer));
             uniformBuffersMemory.emplace_back(std::move(bufferMem));
             uniformBuffersMapped.emplace_back(
@@ -631,40 +728,134 @@ class HelloTriangleApplication
         }
     }
 
+    void createDescriptorPool()
+    {
+        // NOTE: 9. 我们还必须从描述符池中请求SSBO的描述符类型
+        std::array poolSize{
+            vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,
+                                   MAX_FRAMES_IN_FLIGHT),
+            // 我们需要将从池中请求的vk::DescriptorType::eStorageBuffer类型的数量增加一倍，因为我们的集合引用了最后一帧和当前帧的SSBO
+            vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer,
+                                   MAX_FRAMES_IN_FLIGHT * 2)};
+        vk::DescriptorPoolCreateInfo poolInfo{};
+        poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+        poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
+        poolInfo.poolSizeCount = poolSize.size();
+        poolInfo.pPoolSizes = poolSize.data();
+        descriptorPool = vk::raii::DescriptorPool(device, poolInfo);
+    }
+
+    void createComputeDescriptorSets()
+    {
+        std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
+                                                     computeDescriptorSetLayout);
+        vk::DescriptorSetAllocateInfo allocInfo{};
+        allocInfo.descriptorPool = *descriptorPool;
+        allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+        allocInfo.pSetLayouts = layouts.data();
+        computeDescriptorSets.clear();
+        computeDescriptorSets = device.allocateDescriptorSets(allocInfo);
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            vk::DescriptorBufferInfo bufferInfo(uniformBuffers[i], 0,
+                                                sizeof(UniformBufferObject));
+
+            // NOTE: 最后一帧SSO
+            vk::DescriptorBufferInfo storageBufferInfoLastFrame(
+                shaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT], 0,
+                sizeof(Particle) * PARTICLE_COUNT);
+            // NOTE: 8. 当前帧的SSBO
+            vk::DescriptorBufferInfo storageBufferInfoCurrentFrame(
+                shaderStorageBuffers[i], 0, sizeof(Particle) * PARTICLE_COUNT);
+            std::array descriptorWrites{
+                vk::WriteDescriptorSet{.dstSet = *computeDescriptorSets[i],
+                                       .dstBinding = 0,
+                                       .dstArrayElement = 0,
+                                       .descriptorCount = 1,
+                                       .descriptorType =
+                                           vk::DescriptorType::eUniformBuffer,
+                                       .pImageInfo = nullptr,
+                                       .pBufferInfo = &bufferInfo,
+                                       .pTexelBufferView = nullptr},
+                vk::WriteDescriptorSet{.dstSet = *computeDescriptorSets[i],
+                                       .dstBinding = 1,
+                                       .dstArrayElement = 0,
+                                       .descriptorCount = 1,
+                                       .descriptorType =
+                                           vk::DescriptorType::eStorageBuffer,
+                                       .pImageInfo = nullptr,
+                                       .pBufferInfo = &storageBufferInfoLastFrame,
+                                       .pTexelBufferView = nullptr},
+                vk::WriteDescriptorSet{.dstSet = *computeDescriptorSets[i],
+                                       .dstBinding = 2,
+                                       .dstArrayElement = 0,
+                                       .descriptorCount = 1,
+                                       .descriptorType =
+                                           vk::DescriptorType::eStorageBuffer,
+                                       .pImageInfo = nullptr,
+                                       .pBufferInfo = &storageBufferInfoCurrentFrame,
+                                       .pTexelBufferView = nullptr},
+            };
+            device.updateDescriptorSets(descriptorWrites, {});
+        }
+    }
+
     void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
                       vk::MemoryPropertyFlags properties, vk::raii::Buffer &buffer,
-                      vk::raii::DeviceMemory &bufferMemory)
+                      vk::raii::DeviceMemory &bufferMemory) const
     {
-        vk::BufferCreateInfo bufferInfo{
-            .size = size, .usage = usage, .sharingMode = vk::SharingMode::eExclusive};
+        vk::BufferCreateInfo bufferInfo{};
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+        bufferInfo.sharingMode = vk::SharingMode::eExclusive;
         buffer = vk::raii::Buffer(device, bufferInfo);
         vk::MemoryRequirements memRequirements = buffer.getMemoryRequirements();
-        vk::MemoryAllocateInfo allocInfo{.allocationSize = memRequirements.size,
-                                         .memoryTypeIndex = findMemoryType(
-                                             memRequirements.memoryTypeBits, properties)};
+        vk::MemoryAllocateInfo allocInfo{};
+        allocInfo.allocationSize = memRequirements.size;
+        allocInfo.memoryTypeIndex =
+            findMemoryType(memRequirements.memoryTypeBits, properties);
         bufferMemory = vk::raii::DeviceMemory(device, allocInfo);
         buffer.bindMemory(bufferMemory, 0);
     }
 
-    void copyBuffer(vk::raii::Buffer &srcBuffer, vk::raii::Buffer &dstBuffer,
-                    vk::DeviceSize size)
+    [[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommands() const
     {
-        vk::CommandBufferAllocateInfo allocInfo{.commandPool = commandPool,
-                                                .level = vk::CommandBufferLevel::ePrimary,
-                                                .commandBufferCount = 1};
-        vk::raii::CommandBuffer commandCopyBuffer =
-            std::move(device.allocateCommandBuffers(allocInfo).front());
-        commandCopyBuffer.begin(vk::CommandBufferBeginInfo{
-            .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-        commandCopyBuffer.copyBuffer(*srcBuffer, *dstBuffer, vk::BufferCopy(0, 0, size));
-        commandCopyBuffer.end();
-        queue.submit(vk::SubmitInfo{.commandBufferCount = 1,
-                                    .pCommandBuffers = &*commandCopyBuffer},
-                     nullptr);
+        vk::CommandBufferAllocateInfo allocInfo{};
+        allocInfo.commandPool = *commandPool;
+        allocInfo.level = vk::CommandBufferLevel::ePrimary;
+        allocInfo.commandBufferCount = 1;
+        vk::raii::CommandBuffer commandBuffer =
+            std::move(vk::raii::CommandBuffers(device, allocInfo).front());
+
+        vk::CommandBufferBeginInfo beginInfo{
+            .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
+        commandBuffer.begin(beginInfo);
+
+        return commandBuffer;
+    }
+
+    void endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer) const
+    {
+        commandBuffer.end();
+
+        vk::SubmitInfo submitInfo{};
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &*commandBuffer;
+        queue.submit(submitInfo, nullptr);
         queue.waitIdle();
     }
 
-    uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
+    void copyBuffer(const vk::raii::Buffer &srcBuffer, const vk::raii::Buffer &dstBuffer,
+                    vk::DeviceSize size) const
+    {
+        vk::raii::CommandBuffer commandCopyBuffer = beginSingleTimeCommands();
+        commandCopyBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(0, 0, size));
+        endSingleTimeCommands(commandCopyBuffer);
+    }
+
+    [[nodiscard]] uint32_t findMemoryType(uint32_t typeFilter,
+                                          vk::MemoryPropertyFlags properties) const
     {
         vk::PhysicalDeviceMemoryProperties memProperties =
             physicalDevice.getMemoryProperties();
@@ -684,15 +875,26 @@ class HelloTriangleApplication
     void createCommandBuffers()
     {
         commandBuffers.clear();
-        vk::CommandBufferAllocateInfo allocInfo{.commandPool = commandPool,
-                                                .level = vk::CommandBufferLevel::ePrimary,
-                                                .commandBufferCount =
-                                                    MAX_FRAMES_IN_FLIGHT};
+        vk::CommandBufferAllocateInfo allocInfo{};
+        allocInfo.commandPool = *commandPool;
+        allocInfo.level = vk::CommandBufferLevel::ePrimary;
+        allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
         commandBuffers = vk::raii::CommandBuffers(device, allocInfo);
+    }
+
+    void createComputeCommandBuffers()
+    {
+        computeCommandBuffers.clear();
+        vk::CommandBufferAllocateInfo allocInfo{};
+        allocInfo.commandPool = *commandPool;
+        allocInfo.level = vk::CommandBufferLevel::ePrimary;
+        allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+        computeCommandBuffers = vk::raii::CommandBuffers(device, allocInfo);
     }
 
     void recordCommandBuffer(uint32_t imageIndex)
     {
+        commandBuffers[currentFrame].reset();
         commandBuffers[currentFrame].begin({});
         // Before starting rendering, transition the swapchain image to
         // COLOR_ATTACHMENT_OPTIMAL
@@ -724,10 +926,12 @@ class HelloTriangleApplication
                             static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
         commandBuffers[currentFrame].setScissor(
             0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
-        commandBuffers[currentFrame].bindVertexBuffers(0, *vertexBuffer, {0});
-        commandBuffers[currentFrame].bindIndexBuffer(
-            *indexBuffer, 0, vk::IndexTypeValue<decltype(indices)::value_type>::value);
-        commandBuffers[currentFrame].drawIndexed(indices.size(), 1, 0, 0, 0);
+
+        // NOTE: 20. 绑定并绘制顶点
+        commandBuffers[currentFrame].bindVertexBuffers(
+            0, {shaderStorageBuffers[currentFrame]}, {0});
+        commandBuffers[currentFrame].draw(PARTICLE_COUNT, 1, 0, 0);
+
         commandBuffers[currentFrame].endRendering();
         // After rendering, transition the swapchain image to PRESENT_SRC
         transition_image_layout(
@@ -769,127 +973,171 @@ class HelloTriangleApplication
         commandBuffers[currentFrame].pipelineBarrier2(dependency_info);
     }
 
+    // NOTE: 14. 运行计算命令. 告诉GPU做那些计算
+    void recordComputeCommandBuffer()
+    {
+        computeCommandBuffers[currentFrame].reset();
+        computeCommandBuffers[currentFrame].begin({});
+        computeCommandBuffers[currentFrame].bindPipeline(vk::PipelineBindPoint::eCompute,
+                                                         computePipeline);
+        computeCommandBuffers[currentFrame].bindDescriptorSets(
+            vk::PipelineBindPoint::eCompute, computePipelineLayout, 0,
+            {computeDescriptorSets[currentFrame]}, {});
+        // NOTE: 分派计算
+        computeCommandBuffers[currentFrame].dispatch(PARTICLE_COUNT / 256, 1, 1);
+        computeCommandBuffers[currentFrame].end();
+    }
+
     void createSyncObjects()
     {
-        presentCompleteSemaphore.clear();
-        renderFinishedSemaphore.clear();
         inFlightFences.clear();
 
-        for (size_t i = 0; i < swapChainImages.size(); i++)
-        {
-            presentCompleteSemaphore.emplace_back(device, vk::SemaphoreCreateInfo());
-            renderFinishedSemaphore.emplace_back(device, vk::SemaphoreCreateInfo());
-        }
+        vk::SemaphoreTypeCreateInfo semaphoreType{
+            .semaphoreType = vk::SemaphoreType::eTimeline, .initialValue = 0};
+        semaphore = vk::raii::Semaphore(device, {.pNext = &semaphoreType});
+        timelineValue = 0;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            inFlightFences.emplace_back(
-                device, vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
+            vk::FenceCreateInfo fenceInfo{};
+            inFlightFences.emplace_back(device, fenceInfo);
         }
     }
 
-    // NOTE:
     void updateUniformBuffer(uint32_t currentImage)
     {
-        static auto startTime = std::chrono::high_resolution_clock::now();
-
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float>(currentTime - startTime).count();
-
         UniformBufferObject ubo{};
-        // NOTE: 8. 模型转换: 将是使用time变量绕Z轴的简单旋转。完成每秒旋转90度的目的
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f),
-                                glm::vec3(0.0f, 0.0f, 1.0f));
-        // NOTE: 9. 视图转换:眼睛位置、中心位置和上轴作为参数.从上面以45度角查看几何图形
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
-                               glm::vec3(0.0f, 0.0f, 1.0f));
-        // NOTE: 10. 投影转换：具有45度垂直视野的透视投影。
-        // 其他参数是长宽比、远近视图平面。重要的是使用当前交换链范围来计算长宽比，以考虑调整大小后窗口的新宽度和高度
-        ubo.proj = glm::perspective(glm::radians(45.0f),
-                                    static_cast<float>(swapChainExtent.width) /
-                                        static_cast<float>(swapChainExtent.height),
-                                    0.1f, 10.0f);
-        // GLM最初是为OpenGL设计的，其中剪辑坐标的Y坐标是倒置的。最简单的补偿方法是翻转投影矩阵中Y轴缩放因子上的符号。
-        // 如果不这样做，那么图像将被倒置渲染。
-        ubo.proj[1][1] *= -1; // NOTE: 补偿倒置
+        ubo.deltaTime = static_cast<float>(lastFrameTime) * 2.0f;
 
-        // 现在定义了所有的转换，因此我们可以将统一缓冲区对象中的数据复制到当前的统一缓冲区。
-        // 这与我们对顶点缓冲区所做的完全相同，只是没有暂存缓冲区。
-        // 如前所述，我们只映射一次统一缓冲区，因此我们可以直接写入它而无需再次映射
-        memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo)); // NOTE: 写入
-
-        // NOTE:以这种方式使用UBO不是将频繁变化的值传递给着色器的最有效方法。将少量数据缓冲区传递给着色器的更有效方法是推送常量。
+        memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
 
+    // NOTE: 17. 绘制的时候，要保证 同步图形和计算 安全后才能绘制
     void drawFrame()
     {
+        auto [result, imageIndex] = swapChain.acquireNextImage(
+            UINT64_MAX, nullptr, *inFlightFences[currentFrame]);
         while (vk::Result::eTimeout ==
                device.waitForFences(*inFlightFences[currentFrame], vk::True, UINT64_MAX))
             ;
-        auto [result, imageIndex] = swapChain.acquireNextImage(
-            UINT64_MAX, *presentCompleteSemaphore[semaphoreIndex], nullptr);
+        device.resetFences(*inFlightFences[currentFrame]);
 
-        if (result == vk::Result::eErrorOutOfDateKHR)
-        {
-            recreateSwapChain();
-            return;
-        }
-        if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR)
-        {
-            throw std::runtime_error("failed to acquire swap chain image!");
-        }
-        // NOTE: 7. 更新统一数据
+        // NOTE: 18. 使用递增的时间线值来协调计算和图形之间的工作
+        //  Update timeline value for this frame
+        uint64_t computeWaitValue = timelineValue;
+        uint64_t computeSignalValue = ++timelineValue;
+        uint64_t graphicsWaitValue = computeSignalValue;
+        uint64_t graphicsSignalValue = ++timelineValue;
+
         updateUniformBuffer(currentFrame);
 
-        device.resetFences(*inFlightFences[currentFrame]);
-        commandBuffers[currentFrame].reset();
-        recordCommandBuffer(imageIndex);
-
-        vk::PipelineStageFlags waitDestinationStageMask(
-            vk::PipelineStageFlagBits::eColorAttachmentOutput);
-        const vk::SubmitInfo submitInfo{
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &*presentCompleteSemaphore[semaphoreIndex],
-            .pWaitDstStageMask = &waitDestinationStageMask,
-            .commandBufferCount = 1,
-            .pCommandBuffers = &*commandBuffers[currentFrame],
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &*renderFinishedSemaphore[imageIndex]};
-        queue.submit(submitInfo, *inFlightFences[currentFrame]);
-
-        try
+        // 第一次提交到计算队列使用计算着色器更新粒子位置，然后第二次提交将使用更新的数据来绘制粒子系统。
+        //  NOTE: 15. 提交计算工作
         {
-            const vk::PresentInfoKHR presentInfoKHR{
-                .waitSemaphoreCount = 1,
-                .pWaitSemaphores = &*renderFinishedSemaphore[imageIndex],
-                .swapchainCount = 1,
-                .pSwapchains = &*swapChain,
-                .pImageIndices = &imageIndex};
-            result = queue.presentKHR(presentInfoKHR);
-            if (result == vk::Result::eErrorOutOfDateKHR ||
-                result == vk::Result::eSuboptimalKHR || framebufferResized)
+            recordComputeCommandBuffer();
+            // Submit compute work
+            // NOTE: 18. 使用时间线同步，来同步CPU内部的 数据和绘制关系
+            vk::TimelineSemaphoreSubmitInfo computeTimelineInfo{
+                .waitSemaphoreValueCount = 1,
+                .pWaitSemaphoreValues = &computeWaitValue,
+                .signalSemaphoreValueCount = 1,
+                .pSignalSemaphoreValues = &computeSignalValue};
+
+            vk::PipelineStageFlags waitStages[] = {
+                vk::PipelineStageFlagBits::eComputeShader};
+
+            vk::SubmitInfo computeSubmitInfo{.pNext = &computeTimelineInfo,
+                                             .waitSemaphoreCount = 1,
+                                             .pWaitSemaphores = &*semaphore,
+                                             .pWaitDstStageMask = waitStages,
+                                             .commandBufferCount = 1,
+                                             .pCommandBuffers =
+                                                 &*computeCommandBuffers[currentFrame],
+                                             .signalSemaphoreCount = 1,
+                                             .pSignalSemaphores = &*semaphore};
+
+            queue.submit(computeSubmitInfo, nullptr);
+        }
+        // NOTE: 16. 提交绘图工作
+        {
+            // Record graphics command buffer
+            recordCommandBuffer(imageIndex);
+
+            // Submit graphics work (waits for compute to finish)
+            vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eVertexInput;
+            vk::TimelineSemaphoreSubmitInfo graphicsTimelineInfo{
+                .waitSemaphoreValueCount = 1,
+                .pWaitSemaphoreValues = &graphicsWaitValue,
+                .signalSemaphoreValueCount = 1,
+                .pSignalSemaphoreValues = &graphicsSignalValue};
+
+            vk::SubmitInfo graphicsSubmitInfo{.pNext = &graphicsTimelineInfo,
+                                              .waitSemaphoreCount = 1,
+                                              .pWaitSemaphores = &*semaphore,
+                                              .pWaitDstStageMask = &waitStage,
+                                              .commandBufferCount = 1,
+                                              .pCommandBuffers =
+                                                  &*commandBuffers[currentFrame],
+                                              .signalSemaphoreCount = 1,
+                                              .pSignalSemaphores = &*semaphore};
+
+            queue.submit(graphicsSubmitInfo, nullptr);
+
+            // Present the image (wait for graphics to finish)
+            vk::SemaphoreWaitInfo waitInfo{.semaphoreCount = 1,
+                                           .pSemaphores = &*semaphore,
+                                           .pValues = &graphicsSignalValue};
+
+            // NOTE: 19. 等待图形工作完成
+            //  Wait for graphics to complete before presenting
+            while (vk::Result::eTimeout == device.waitSemaphores(waitInfo, UINT64_MAX))
+                ;
+
+            vk::PresentInfoKHR presentInfo{.waitSemaphoreCount =
+                                               0, // No binary semaphores needed
+                                           .pWaitSemaphores = nullptr,
+                                           .swapchainCount = 1,
+                                           .pSwapchains = &*swapChain,
+                                           .pImageIndices = &imageIndex};
+            /*
+与二进制信号量实现相比，这种时间线信号量方法提供了几个好处：
+
+1. 简化的资源管理：我们只需要一个信号量，而不是飞行中每帧的多个信号量。
+2. 更明确的同步：时间线值清楚地表明哪些操作相互依赖。
+3. 减少开销：使用更少的同步对象，管理它们的开销更少。
+4. 更灵活的同步模式：时间线信号量支持更复杂的同步场景，这对于二进制信号量来说是困难的。
+
+时间线信号量在具有多个依赖操作的场景中特别有用，例如我们的compute-then-graphics工作流，
+或者当您需要在主机和设备之间进行同步时，它们提供了更强大和灵活的同步机制，
+可以简化您的代码，同时启用更复杂的同步模式
+*/
+            try
             {
-                framebufferResized = false;
-                recreateSwapChain();
+                result = queue.presentKHR(presentInfo);
+                if (result == vk::Result::eErrorOutOfDateKHR ||
+                    result == vk::Result::eSuboptimalKHR || framebufferResized)
+                {
+                    framebufferResized = false;
+                    recreateSwapChain();
+                }
+                else if (result != vk::Result::eSuccess)
+                {
+                    throw std::runtime_error("failed to present swap chain image!");
+                }
             }
-            else if (result != vk::Result::eSuccess)
+            catch (const vk::SystemError &e)
             {
-                throw std::runtime_error("failed to present swap chain image!");
+                if (e.code().value() == static_cast<int>(vk::Result::eErrorOutOfDateKHR))
+                {
+                    recreateSwapChain();
+                    return;
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
-        catch (const vk::SystemError &e)
-        {
-            if (e.code().value() == static_cast<int>(vk::Result::eErrorOutOfDateKHR))
-            {
-                recreateSwapChain();
-                return;
-            }
-            else
-            {
-                throw;
-            }
-        }
-        semaphoreIndex = (semaphoreIndex + 1) % presentCompleteSemaphore.size();
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
@@ -942,7 +1190,8 @@ class HelloTriangleApplication
                    : vk::PresentModeKHR::eFifo;
     }
 
-    vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities)
+    [[nodiscard]] vk::Extent2D chooseSwapExtent(
+        const vk::SurfaceCapabilitiesKHR &capabilities) const
     {
         if (capabilities.currentExtent.width != 0xFFFFFFFF)
         {
@@ -957,7 +1206,7 @@ class HelloTriangleApplication
                                      capabilities.maxImageExtent.height)};
     }
 
-    std::vector<const char *> getRequiredExtensions()
+    [[nodiscard]] std::vector<const char *> getRequiredExtensions() const
     {
         uint32_t glfwExtensionCount = 0;
         auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -989,6 +1238,7 @@ class HelloTriangleApplication
     static std::vector<char> readFile(const std::string &filename)
     {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
         if (!file.is_open())
         {
             throw std::runtime_error("failed to open file!");
@@ -997,61 +1247,50 @@ class HelloTriangleApplication
         file.seekg(0, std::ios::beg);
         file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
         file.close();
+
         return buffer;
     }
 };
 
-/**
-MVP 是 Model-View-Projection 的缩写，它描述了将一个三维模型顶点从它的本地坐标系（Model
-Space）最终转换到二维屏幕坐标系（Clip Space）所经历的三个关键变换。
-在 Vulkan 中，我们通过在顶点着色器中用矩阵乘法来完成这个转换。
-一个三维场景包含无数个顶点，每个顶点最初都定义在它所属模型的本地坐标系中。
-为了将整个场景正确地渲染到二维屏幕上，我们需要：
-    1. 摆放模型：将每个模型从本地坐标转换到世界场景中的正确位置（Model Transform）。
-    2. 设置摄像机：将整个世界坐标转换为相对于摄像机视角的坐标（View Transform）。
-    3. 模拟透视：将三维的视角坐标“投影”到一个标准化的立方体内，
-       为后续光栅化做准备（Projection Transform）。
-
-这三个步骤就是 MVP 转换。
-NOTE: M - Model Matrix（模型矩阵）: 将顶点从模型空间 转换到世界空间。
-NOTE: V - View Matrix（视图矩阵）: 将顶点从世界空间 转换到视图空间。
-NOTE: P - Projection Matrix（投影矩阵）:将顶点从视图空间 转换到裁剪空间。
-          这是从 3D 到 2D的关键一步，它定义了视锥体
-
-//NOTE: 从 Vulkan 的角度理解 MVP 转换：
-它是一个通过三个连续的 4x4 矩阵乘法，
-将顶点从模型本地空间 -> 世界空间 -> 摄像机空间 ->标准化裁剪空间 的标准化过程。这个过程为
-Vulkan 固定管线的后续阶段（裁剪、光栅化）做好了准备，是所有 3D 图形渲染的基石
- */
+// NOTE: 实现如何使用计算着色器将工作从CPU卸载到GPU。
 int main()
 {
-    /**
-// NOTE: 虽然创建了描述符集布局，但没有实际创建和绑定描述符集。崩溃没有问题
-//NOTE: 还需要实际上将VkBuffer绑定到统一缓冲区描述符
-validation layer: type { Validation } msg: vkCmdDrawIndexed(): The VkPipeline
-0xd000000000d statically uses descriptor set 0, but because a descriptor was never bound,
-the pipeline layouts are not compatible.
-验证层：类型｛validation｝msg:vkCmdDrawIndexed（）:VkPipeline
-0xd0000000000d静态使用描述符集0，但由于描述符从未绑定，因此管道布局不兼容。
-如果使用描述符，请确保为VK_PIPELINE_BIND_POINT_GRAPHICS调用vkCmdBindDescriptorSet、vkCmdPushDescriptorSet、vkCmdSetDescriptorBufferOffset等之一。
-     */
-    // NOTE: 0. 我们不再需要暂存缓冲区，stagingInfo相关的全部删除
-    // 我们将每帧将新数据复制到统一缓冲区，所以拥有暂存缓冲区没有任何意义。
+    // NOTE: 所有前面的章节都涉及Vulkan管道的传统图形部分
+    // Vulkan中的计算着色器支持是强制性的。这意味着您可以在每个可用的Vulkan实现上使用计算着色器，无论它是高端桌面GPU还是低功耗嵌入式设备。
+    /*
+    这开启了图形处理器单元（GPGPU）上的通用计算世界，无论您的应用程序在哪里运行。
+    GPGPU意味着您可以在GPU上进行通用计算，这传统上是CPU的一个领域。
+
+    GPU的计算功能可以用于的一些示例包括图像处理、可见性测试、后期处理、
+    高级照明计算、动画、物理（例如粒子系统）等等。甚至可以将计算用于
+    不需要任何图形输出的非可视计算工作，例如数字运算或
+    AI 相关的事情。这被称为“无头计算”。
+
+    GPU 是高度并行化的，其中一些 GPU具有数万个小型计算单元。
+    这通常使它们比具有少量大型计算单元的 CPU 更适合高度并行的工作流
+    */
+    // NOTE:许多需要CPU通用功能的工作负载现在可以在GPU上实时完成
+    // NOTE: 重要的是要知道计算与管道的图形部分完全分离。
+    // https://docs.vulkan.org/tutorial/latest/11_Compute_Shader.html#_the_vulkan_pipeline
+    // NOTE: 固定功能，阶段，资源。就这三个概念
+    // 片段着色器总是应用于顶点着色器的转换输出。
     try
     {
-        // NOTE: 我们现在可以将任意属性传递给每个顶点的顶点着色器，但是全局变量呢？
-        // NOTE: 我们可以将其作为顶点数据包含在内，但这是对内存的浪费。
+        // NOTE: 使用计算着色器的一个例子: 基于GPU的粒子系统
+        // NOTE: 粒子由直接在GPU上的计算着色器更新，无需任何CPU交互
         /*
-        在Vulkan中解决这个问题的正确方法是使用资源描述符。
-        描述符是着色器自由访问缓冲区和图像等资源的一种方式。
-        让顶点着色器通过描述符访问它们。描述符的用法由三部分组成：
-            1. 在管道创建期间指定描述符集布局
-            2. 从描述符池中分配描述符集
-            3. 在渲染期间绑定描述符集
+        基于GPU的粒子系统，不再需要这种往返。
+        顶点仅在开始时上传到GPU，所有更新都使用计算着色器在GPU的内存中完成。
+        速度更快的主要原因之一是GPU与其本地内存之间的带宽要高得多。
+        在基于CPU的场景中，您会受到主存和PCI-express带宽的限制，这通常只是GPU内存带宽的一小部分
         */
-        // NOTE:描述符集布局指定管道将要访问的资源类型，就像渲染传递指定将要访问的附件类型一样
-        // NOTE: 然后描述符集被绑定到绘图命令，就像顶点缓冲区和帧缓冲区一样
-        HelloTriangleApplication app;
+        // NOTE: 到目前为止，我们总是使用CPU写入数据，并且只在GPU上读取。
+        /*
+        计算着色器引入的一个重要概念是能够任意读取和写入缓冲区。
+        为此，Vulkan提供了两种专用的存储类型。
+NOTE:着色器存储缓冲区对象（SSBO）
+        */
+        ComputeShaderApplication app;
         app.run();
     }
     catch (const std::exception &e)

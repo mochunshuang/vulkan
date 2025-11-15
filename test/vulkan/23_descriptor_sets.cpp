@@ -1,18 +1,23 @@
-import std;
-import std.compat;
+
 #include <cassert>
+
+#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
+#include <GLFW/glfw3.h>
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
 
 #if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
 #include <vulkan/vulkan_raii.hpp>
 #else
 import vulkan_hpp;
 #endif
-
-#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
-#include <GLFW/glfw3.h>
-
-import glm;
-
+import std;
+import std.compat;
 // NOLINTBEGIN
 
 constexpr uint32_t WIDTH = 800;
@@ -464,7 +469,7 @@ class HelloTriangleApplication
     void createGraphicsPipeline()
     {
         vk::raii::ShaderModule shaderModule =
-            createShaderModule(readFile("shaders/22_shader_ubo_slang.spv"));
+            createShaderModule(readFile("shaders/22_shader_ubo.spv"));
 
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,

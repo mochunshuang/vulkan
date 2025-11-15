@@ -11,6 +11,9 @@ CompileFlags: # Tweak the parse settings
   # Remove: -W* # strip all other warning-related flags
   # 全局移除编译参数:Clangd 无法解析的命令参数如下：
   # Remove: [-fmodules-ts,-fdeps-format=p1689r5,-fmodule-mapper*]
+  # 看起来.clangd 优先级最高
+  # Compiler: clang++               # Change argv[0] of compile flags to `clang++`
+  Compiler: E:/mysoftware/llvm-mingw-20250910-ucrt-x86_64/bin/clang++.exe
 
 
 
@@ -90,6 +93,7 @@ Diagnostics:
 
 # https://clangd.llvm.org/config#index
 Index:
+  StandardLibrary: true
   Background: Build
   # Background: Skip     # Disable slow background indexing of these files.
 

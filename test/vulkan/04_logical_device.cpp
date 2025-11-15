@@ -1,17 +1,15 @@
+#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
+#include <GLFW/glfw3.h>
 
-import std;
-import std.compat;
+#include <cassert>
 
 #if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
 #include <vulkan/vulkan_raii.hpp>
 #else
 import vulkan_hpp;
 #endif
-
-#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
-#include <GLFW/glfw3.h>
-
-#include <cassert>
+import std;
+import std.compat;
 
 // NOLINTBEGIN
 constexpr uint32_t WIDTH = 800;
@@ -263,7 +261,7 @@ class HelloTriangleApplication
                                                             &queuePriority};
         vk::DeviceCreateInfo deviceCreateInfo{
             .pNext = &featureChain.get<features0>(), // NOTE: 传递第一个即可
-            .queueCreateInfoCount = 1, // NOTE: 目前仅仅需要绑定1个队列
+            .queueCreateInfoCount = 1,               // NOTE: 目前仅仅需要绑定1个队列
             .pQueueCreateInfos = &deviceQueueCreateInfo,
             .enabledExtensionCount =
                 static_cast<uint32_t>(requiredDeviceExtension.size()),

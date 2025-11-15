@@ -1,5 +1,6 @@
-import std;
-import std.compat;
+#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
+#include <GLFW/glfw3.h>
+
 #include <cassert>
 
 #if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
@@ -7,9 +8,8 @@ import std.compat;
 #else
 import vulkan_hpp;
 #endif
-
-#define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
-#include <GLFW/glfw3.h>
+import std;
+import std.compat;
 
 // NOLINTBEGIN
 constexpr uint32_t WIDTH = 800;
@@ -361,7 +361,7 @@ class HelloTriangleApplication
     void createGraphicsPipeline()
     {
         vk::raii::ShaderModule shaderModule =
-            createShaderModule(readFile("shaders/09_shader_base_slang.spv"));
+            createShaderModule(readFile("shaders/09_shader_base.spv"));
 
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
