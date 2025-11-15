@@ -520,7 +520,7 @@ class ComputeShaderApplication
     {
         // NOTE: 4. 加载计算着色器
         vk::raii::ShaderModule shaderModule =
-            createShaderModule(readFile("shaders/31_shader_compute.spv"));
+            createShaderModule(readFile("shaders/31_shader_compute_replace.spv"));
 
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
@@ -613,7 +613,7 @@ class ComputeShaderApplication
     void createComputePipeline()
     {
         vk::raii::ShaderModule shaderModule =
-            createShaderModule(readFile("shaders/31_shader_compute.spv"));
+            createShaderModule(readFile("shaders/31_shader_compute_replace.spv"));
 
         // 我们只需要一个着色器阶段和一个管道布局
         vk::PipelineShaderStageCreateInfo computeShaderStageInfo{
@@ -1299,6 +1299,13 @@ NOTE:着色器存储缓冲区对象（SSBO）
         return EXIT_FAILURE;
     }
 
+    /*
+    您可能想看看一些高级计算主题，例如：
+        共享内存
+        异步计算
+        原子操作
+        子群
+    */
     return EXIT_SUCCESS;
 }
 // NOLINTEND

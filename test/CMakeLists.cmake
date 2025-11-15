@@ -32,6 +32,6 @@ set(COMP_ENTRY_POINTS -entry vertMain -entry fragMain -entry compMain)
 add_compile_slang_shader(
     31_shader_compute_replace
     "${CMAKE_SOURCE_DIR}/test/vulkan/shaders/31_shader_compute.slang"
-    "${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders/31_shader_compute.spv"
+    "${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders/31_shader_compute_replace.spv"
     "${COMP_ENTRY_POINTS}"
 )
