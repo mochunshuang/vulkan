@@ -36,6 +36,12 @@ add_compile_slang_shader(
     "${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders/31_shader_compute_replace.spv"
     "${COMP_ENTRY_POINTS}"
 )
+add_compile_slang_shader(
+    37_shader_compute_replace
+    "${CMAKE_SOURCE_DIR}/test/vulkan/shaders/37_shader_compute.slang"
+    "${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders/37_shader_compute_replace.spv"
+    "${COMP_ENTRY_POINTS}"
+)
 auto_compile_vert_shaders(compile_all_vulkan_vert
     ${CMAKE_SOURCE_DIR}/test/vulkan/shaders
     ${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders)

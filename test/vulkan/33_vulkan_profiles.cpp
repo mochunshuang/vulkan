@@ -23,6 +23,8 @@
 #include <stdexcept>
 #include <vector>
 
+// NOTE: 1. 添加Vulkan配置文件库
+// 此标头提供了使用Vulkan配置文件所需的功能和结构
 #include <vulkan/vulkan_profiles.hpp>
 
 #if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
@@ -199,7 +201,8 @@ class HelloTriangleApplication
         createSwapChain();
         createImageViews();
 
-        // Create render pass only if not using dynamic rendering
+        // NOTE: 使用特定于配置文件的功能。就不需要手动了
+        //  Create render pass only if not using dynamic rendering
         if (!appInfo.profileSupported)
         {
             createRenderPass();
@@ -208,7 +211,8 @@ class HelloTriangleApplication
         createDescriptorSetLayout();
         createGraphicsPipeline();
 
-        // Create framebuffers only if not using dynamic rendering
+        // NOTE: 4. 根据appInfo.profileSupported来决策
+        //  Create framebuffers only if not using dynamic rendering
         if (!appInfo.profileSupported)
         {
             createFramebuffers();
@@ -410,9 +414,11 @@ class HelloTriangleApplication
         }
     }
 
+    // NOTE: 2. 检查是否支持，我们要求的特性
     void checkFeatureSupport()
     {
-        // Define the KHR roadmap 2022 profile - more widely supported than 2024
+        // 定义您的配置文件要求，而不是手动检查功能和扩展：
+        //  Define the KHR roadmap 2022 profile - more widely supported than 2024
         appInfo.profile = {VP_KHR_ROADMAP_2022_NAME, VP_KHR_ROADMAP_2022_SPEC_VERSION};
 
         // Check if the profile is supported
@@ -420,6 +426,7 @@ class HelloTriangleApplication
         VkResult result = vpGetPhysicalDeviceProfileSupport(*instance, *physicalDevice,
                                                             &appInfo.profile, &supported);
 
+        // NOTE: 根据 appInfo.profileSupported 来创建和配置
         if (result == VK_SUCCESS && supported == VK_TRUE)
         {
             appInfo.profileSupported = true;
@@ -437,6 +444,7 @@ class HelloTriangleApplication
         }
     }
 
+    // NOTE: 2. 使用配置文件创建逻辑设备，最好自动启用所需的功能和扩展
     void createLogicalDevice()
     {
         std::vector<vk::QueueFamilyProperties> queueFamilyProperties =
@@ -558,6 +566,7 @@ class HelloTriangleApplication
         }
     }
 
+    // NOTE: 3. Using dynamic rendering (guaranteed by the profile)
     void createRenderPass()
     {
         // This is only called if the Best Practices profile is not supported
@@ -1925,6 +1934,14 @@ int main()
     */
     try
     {
+        /*
+        使用配置文件的最佳实践:
+        1.选择正确的配置文件：选择符合您的应用程序要求的配置文件，且不会过于严格。
+        2.提供后备选项：如果不支持最佳实践配置文件，请考虑回退到更基本的配置文件。
+        3.清楚地传达需求：根据您支持的配置文件通知用户硬件需求。
+        4.在各种硬件上进行测试：即使使用配置文件，在不同的GPU上测试您的应用程序也很重要。
+        5.保持更新：配置文件随着新的Vulkan版本而发展，因此请保持您的实现是最新的。
+        */
         HelloTriangleApplication app;
         app.run();
     }

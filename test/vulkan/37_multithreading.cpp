@@ -13,12 +13,7 @@
 #include <stdexcept>
 #include <thread>
 #include <vector>
-
-#if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
-#include <vulkan/vulkan_raii.hpp>
-#else
-import vulkan_hpp;
-#endif
+#include <string>
 
 #define GLFW_INCLUDE_VULKAN // REQUIRED only for GLFW CreateWindowSurface.
 #include <GLFW/glfw3.h>
@@ -26,6 +21,12 @@ import vulkan_hpp;
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
+#include <vulkan/vulkan_raii.hpp>
+#else
+import vulkan_hpp;
+#endif
 
 // NOLINTBEGIN
 constexpr uint32_t WIDTH = 800;
@@ -70,6 +71,7 @@ void log(Args &&...args)
 #endif
 }
 
+// NOTE: 1. 线程安全资源管理: 需要确保跨线程安全访问我们的资源
 class ThreadSafeResourceManager
 {
   private:
@@ -406,6 +408,9 @@ class MultithreadedApplication
         }
     }
 
+    // NOTE: 3. 修改计算着色器.以使用[推送常量]指定的粒子范围
+
+    // NOTE: 2. 工作线程实现
     void workerThreadFunc(uint32_t threadIndex)
     {
         while (!shouldExit)
@@ -778,7 +783,7 @@ class MultithreadedApplication
     void createGraphicsPipeline()
     {
         vk::raii::ShaderModule shaderModule =
-            createShaderModule(readFile("shaders/31_shader_compute_replace.spv"));
+            createShaderModule(readFile("shaders/37_shader_compute_replace.spv"));
 
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
@@ -1330,9 +1335,16 @@ class MultithreadedApplication
 
         memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
-
+    /*
+其他高级多线程技术:
+辅助命令缓冲区：并行记录，然后由主命令缓冲区执行。
+动态工作分配的线程池：不是为每个线程分配固定工作、
+异步资源加载：使用多线程异步加载资源。
+    */
+    // NOTE: 4. 更新主循环以协调工作线程
     void drawFrame()
     {
+
         // Wait for the previous frame to finish
         while (vk::Result::eTimeout ==
                device.waitForFences(*inFlightFences[currentFrame], vk::True, UINT64_MAX))
@@ -1495,8 +1507,31 @@ class MultithreadedApplication
 
 int main()
 {
+    /*
+Vulkan的设计考虑了多线程，与旧API相比具有以下几个优势：
+    1.线程安全的命令缓冲区记录：多个线程可以同时将命令记录到不同的命令缓冲区。
+    2.显式同步：Vulkan需要显式同步，让您可以精确控制跨线程的资源访问。
+    3.基于队列的架构：不同的操作可以提交到不同的队列，可能并行执行。
+但是，Vulkan中的多线程需要仔细考虑：
+    1.资源共享：确保跨线程安全访问共享资源。
+    2.同步：正确同步线程之间的操作。
+    3.工作分配：有效地分配工作以最大限度地提高并行性。
+*/
     try
     {
+        /*
+        NOTE: 实现一个多线程渲染系统，
+        该系统建立在我们之前使用计算着色器的工作之上。我们将创建一个粒子系统，其中：
+            1.一个线程处理窗口事件和表示
+            2.多个工作线程记录不同粒子组的命令缓冲区
+            3.专用线程向GPU提交工作
+        实现了一个多线程粒子系统，其中：
+        1.多个工作线程并行记录命令缓冲区
+        2.主线程协调工作并处理呈现
+        3.正确的同步确保线程安全
+通过跨多个CPU内核分配工作，我们可以显著提高性能，特别是对于计算密集型应用程序。Vulkan的显式设计使其非常适合多线程架构，允许对同步和资源访问进行细粒度控制。
+请考虑多线程如何帮助您充分利用现代CPU的全部功能，并记住始终衡量性能以确保您的线程模型实际上对您的特定用例有益
+        */
         MultithreadedApplication app;
         app.run();
     }
@@ -1505,7 +1540,24 @@ int main()
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
+    /*
+性能注意事项：
+在Vulkan中实现多线程时，请记住以下性能考虑因素：
+    1.线程创建开销：创建线程有开销，因此在启动时创建一次，而不是每帧创建一次。
+    2.工作粒度：确保每个线程都有足够的工作来证明线程开销的合理性。
+    3.错误共享：当多个线程访问相邻内存时，请注意缓存行争用。
+    4.队列提交：队列提交应同步以避免竞争条件。
+    5.内存屏障：正确使用内存屏障以确保跨线程的内存操作可见性。
+    6.每个线程的命令池：每个线程都应该有自己的命令池，以避免同步开销。
+    7.测量性能：始终测量以确保您的多线程实际上提高了性能。
 
+调试多线程应用程序可能具有挑战性。以下是一些提示：
+    1.验证层：启用Vulkan验证层以捕获同步问题。
+    2.线程消毒器：使用线程消毒器等工具来检测数据竞争。
+    3.日志记录：实现线程安全的日志记录来跟踪执行流。
+    4.Simplify：从更简单的线程模型开始，逐渐增加复杂性。
+    5.原子操作：对线程安全计数器和标志使用原子操作。
+*/
     return EXIT_SUCCESS;
 }
 // NOLINTEND

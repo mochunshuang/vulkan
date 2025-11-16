@@ -75,16 +75,17 @@ typedef void AssetManagerType;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
-#if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
-#include <vulkan/vulkan_raii.hpp>
-#else
-import vulkan_hpp;
-#endif
 #if defined(__ANDROID__)
 #include <vulkan/vulkan_android.h>
 #include <vulkan/vulkan_core.h>
 #endif
 #include <vulkan/vulkan_profiles.hpp>
+
+#if defined(__INTELLISENSE__) || !defined(USE_CPP20_MODULES)
+#include <vulkan/vulkan_raii.hpp>
+#else
+import vulkan_hpp;
+#endif
 
 constexpr uint32_t WIDTH = 800;
 constexpr uint32_t HEIGHT = 600;
@@ -92,7 +93,9 @@ constexpr uint32_t HEIGHT = 600;
 const std::string MODEL_PATH = "models/viking_room.glb";
 const std::string TEXTURE_PATH = "textures/viking_room.ktx2";
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-// Define the number of objects to render
+
+// NOTE: 要渲染的对象数，屏幕出现的对象数
+//  Define the number of objects to render
 constexpr int MAX_OBJECTS = 3;
 
 // Define VpProfileProperties structure for Android only
@@ -178,6 +181,14 @@ struct std::hash<Vertex>
     }
 };
 
+// NOTE: 1. 定义游戏对象结构
+/*
+此结构封装：
+    1.对象的变换（位置、旋转、缩放）
+    2.每个对象统一缓冲区（飞行中的每帧一个）
+    3.每个对象描述符集（飞行中的每帧一个）
+    4.一种计算模型矩阵的辅助方法
+*/
 // Define a structure to hold per-object data
 struct GameObject
 {
@@ -367,7 +378,9 @@ class VulkanApplication
     vk::raii::Buffer indexBuffer = nullptr;
     vk::raii::DeviceMemory indexBufferMemory = nullptr;
 
-    // Array of game objects to render
+    // NOTE: 2. 创建一个游戏对象数组
+    // 用GameObject数组替换单个统一缓冲区和描述符集
+    //  Array of game objects to render
     std::array<GameObject, MAX_OBJECTS> gameObjects;
 
     vk::raii::DescriptorPool descriptorPool = nullptr;
@@ -1293,7 +1306,9 @@ class VulkanApplication
         copyBuffer(stagingBuffer, indexBuffer, bufferSize);
     }
 
-    // Initialize the game objects with different positions, rotations, and scales
+    // NOTE: 3. 初始化游戏对象: 设置具有不同位置、旋转和比例的游戏对象
+    // 此方法在加载模型后但在创建统一缓冲区之前从initVulkan()调用
+    //  Initialize the game objects with different positions, rotations, and scales
     void setupGameObjects()
     {
         // Object 1 - Center
@@ -1312,7 +1327,9 @@ class VulkanApplication
         gameObjects[2].scale = {0.75f, 0.75f, 0.75f};
     }
 
-    // Create uniform buffers for each object
+    // NOTE: 4. 为每个对象创建统一缓冲区
+    // 为每个对象创建它们，而不是创建一组统一缓冲区：
+    //  Create uniform buffers for each object
     void createUniformBuffers()
     {
         // For each game object
@@ -1340,6 +1357,7 @@ class VulkanApplication
         }
     }
 
+    // NOTE: 4. 更新描述符池大小.我们需要增加描述符池大小以容纳所有对象：
     void createDescriptorPool()
     {
         // We need MAX_OBJECTS * MAX_FRAMES_IN_FLIGHT descriptor sets
@@ -1356,6 +1374,7 @@ class VulkanApplication
         descriptorPool = vk::raii::DescriptorPool(device, poolInfo);
     }
 
+    // NOTE: 4. 同样，我们将为每个对象创建描述符集：
     void createDescriptorSets()
     {
         // For each game object
@@ -1489,6 +1508,7 @@ class VulkanApplication
         commandBuffers = vk::raii::CommandBuffers(device, allocInfo);
     }
 
+    // NOTE: 6. 更新命令缓冲区记录以绘制每个对象
     void recordCommandBuffer(uint32_t imageIndex)
     {
         commandBuffers[currentFrame].begin({});
@@ -1620,6 +1640,7 @@ class VulkanApplication
         }
     }
 
+    // NOTE: 5. 更新所有对象的统一缓冲区,以处理所有对象
     void updateUniformBuffers()
     {
         static auto startTime = std::chrono::high_resolution_clock::now();
@@ -1898,6 +1919,46 @@ void android_main(android_app *app)
 #else
 int main()
 {
+    /*
+在渲染多个对象时，我们需要考虑哪些资源应该是：
+1.跨所有对象共享-以最大限度地减少内存使用和状态更改
+2.每个对象重复-以允许独立定位和外观
+共享资源：
+    1.顶点和索引缓冲区（当对象使用相同的网格时）
+    2.纹理和采样器（当对象使用相同的纹理时）
+    3.管道对象和管道布局
+    4.渲染通道
+    5.命令池
+每个对象资源：
+    1.转换矩阵（位置、旋转、比例）
+    2.包含这些矩阵的统一缓冲区
+    3.引用这些统一缓冲区的描述符集
+    4.推送常量（用于小的、经常变化的数据）
+*/
+
+    /*
+性能注意事项:
+渲染多个对象时，请记住以下性能考虑因素：
+    1.最小化状态更改：按材质/纹理对对象进行分组以减少绑定更改。
+    2.对许多相同的对象使用实例化（本教程未涵盖）。
+    3.考虑为小的、经常变化的数据而不是统一的缓冲区设置推送常量。
+    4.尽可能批量绘制调用以减少CPU开销。
+    5.对大量对象使用间接绘图（此处未涵盖）。
+
+
+您现在已经学习了如何在Vulkan中渲染多个对象：
+    1.创建一个结构来保存每个对象的数据
+    2.为每个对象复制必要的资源（统一缓冲区、描述符集）
+    3.共享可以重用的资源（顶点/索引缓冲区、管道、纹理）
+    4.更新渲染循环以使用自己的转换绘制每个对象
+灵活地独立定位、旋转和缩放对象，同时通过在适当的地方共享资源来保持良好的性能
+
+可以使用以下方式扩展此系统：
+    1.对象层次结构（父子关系）
+    2.不同对象的不同网格和材料
+    3.平头体剔除以避免在相机视图之外渲染对象
+    4.不同距离物体的详细级别系统
+*/
     try
     {
         VulkanApplication app;
