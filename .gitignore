@@ -1,5 +1,5 @@
 dependencies/
 cache
 build
-output/*
+**/output
 .cache/
