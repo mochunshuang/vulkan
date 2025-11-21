@@ -101,7 +101,7 @@ Index:
 Completion:
   AllScopes: Yes
   ArgumentLists: FullPlaceholders
-  HeaderInsertion: Never  # 改为 Never 禁用自动头文件插入
+  HeaderInsertion: IWYU  # IWYU 或 Never 禁用自动头文件插入
   CodePatterns: All
 
 InlayHints:

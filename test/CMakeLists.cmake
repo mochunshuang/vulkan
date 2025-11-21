@@ -6,6 +6,7 @@ include(${CMAKE_SOURCE_DIR}/test/script/auto_add_exec.cmake)
 include(${CMAKE_SOURCE_DIR}/test/script/auto_add_vulkan_module.cmake)
 include(${CMAKE_SOURCE_DIR}/test/script/auto_compile_slang_shaders.cmake)
 include(${CMAKE_SOURCE_DIR}/test/script/auto_compile_glslc_shaders.cmake)
+include(${CMAKE_SOURCE_DIR}/test/script/auto_add_ray_tracing.cmake)
 
 # 首先添加普通源文件
 add_executable(base)
@@ -48,3 +49,5 @@ auto_compile_vert_shaders(compile_all_vulkan_vert
 auto_compile_frag_shaders(compile_all_vulkan_frag
     ${CMAKE_SOURCE_DIR}/test/vulkan/shaders
     ${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders)
+
+auto_add_ray_tracing("ray_tracing/one" "glm_modules")
