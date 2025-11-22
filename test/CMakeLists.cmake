@@ -50,4 +50,8 @@ auto_compile_frag_shaders(compile_all_vulkan_frag
     ${CMAKE_SOURCE_DIR}/test/vulkan/shaders
     ${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders)
 
-auto_add_ray_tracing("ray_tracing/one" "glm_modules")
+# auto_add_ray_tracing("ray_tracing/one" "glm_modules")
+auto_add_ray_tracing("ray_tracing/next" "stb")
+file(COPY ${CMAKE_SOURCE_DIR}/test/ray_tracing/images
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/ray_tracing
+    FILES_MATCHING PATTERN "*")

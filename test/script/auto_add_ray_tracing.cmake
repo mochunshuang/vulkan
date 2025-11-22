@@ -21,7 +21,8 @@ function(auto_add_ray_tracing dir_name libraries)
             RUNTIME_OUTPUT_DIRECTORY ${TEST_EXECUTABLE_OUTPUT_PATH}/${dir_name}
         )
 
-        target_link_libraries(${target_name} PRIVATE ${libraries})
+        # NOTE: 加引号，才能方便 list 以 空格的传输
+        target_link_libraries(${target_name} PRIVATE "${libraries}")
 
         message(STATUS "[Added exec]: ${target_name} from ${test_file}")
     endforeach()
