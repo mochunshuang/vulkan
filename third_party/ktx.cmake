@@ -20,7 +20,7 @@
 # 同步 .gitmodules 的更改到本地 Git 配置
 # git submodule sync
 # 重新初始化子模块（会使用新的 URL）
-# git submodule update --init
+# git submodule update --init --recursive
 
 # NOTE: 然后设置 远程仓库。 保证 git remote -v 是正确的
 # git remote set-url origin https://gh-proxy.org/https://github.com/KhronosGroup/KTX-Software.git
