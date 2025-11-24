@@ -395,6 +395,8 @@ struct glfw_swapchain
     // 图像视图实际上是图像的视图。它描述了如何访问图像以及访问图像的哪一部分
     std::vector<vk::raii::ImageView> swapChainImageViews; // NOTE: 图像视图
 
+    vk::raii::CommandBuffer commandBuffer = nullptr;
+
     glfw_swapchain() = default;
     glfw_swapchain(vk::raii::PhysicalDevice &physicalDevice, vk::raii::Device &device,
                    vk::raii::SurfaceKHR &surface, GLFWwindow *window)
@@ -462,6 +464,83 @@ struct glfw_swapchain
         }
     }
 
+    // NOTE:直接在结构中指定要渲染到的图像视图。
+    // 我们还指定了加载和存储作，类似于我们在渲染通道中所做的
+    void recordCommandBuffer(uint32_t imageIndex)
+    {
+        // NOTE: 我们不需要创建帧缓冲区或渲染通道。简化且灵活
+        commandBuffer.begin({});
+
+        // Transition the image layout for rendering
+        transition_image_layout(imageIndex, vk::ImageLayout::eUndefined,
+                                vk::ImageLayout::eColorAttachmentOptimal, {},
+                                vk::AccessFlagBits2::eColorAttachmentWrite,
+                                vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+
+        // Set up the color attachment
+        vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+        vk::RenderingAttachmentInfo attachmentInfo = {
+            .imageView = swapChainImageViews[imageIndex],
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .loadOp = vk::AttachmentLoadOp::eClear,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue = clearColor};
+
+        // Set up the rendering info
+        vk::RenderingInfo renderingInfo = {
+            .renderArea = {.offset = {0, 0}, .extent = swapChainExtent},
+            .layerCount = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &attachmentInfo};
+
+        // Begin rendering
+        commandBuffer.beginRendering(renderingInfo);
+
+        // Rendering commands will go here
+
+        // End rendering
+        commandBuffer.endRendering();
+
+        // Transition the image layout for presentation
+        transition_image_layout(imageIndex, vk::ImageLayout::eColorAttachmentOptimal,
+                                vk::ImageLayout::ePresentSrcKHR,
+                                vk::AccessFlagBits2::eColorAttachmentWrite, {},
+                                vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                vk::PipelineStageFlagBits2::eBottomOfPipe);
+
+        commandBuffer.end();
+    }
+
+    // NOTE: 图像布局过渡
+    void transition_image_layout(uint32_t imageIndex, vk::ImageLayout oldLayout,
+                                 vk::ImageLayout newLayout,
+                                 vk::AccessFlags2 srcAccessMask,
+                                 vk::AccessFlags2 dstAccessMask,
+                                 vk::PipelineStageFlags2 srcStageMask,
+                                 vk::PipelineStageFlags2 dstStageMask)
+    {
+        vk::ImageMemoryBarrier2 barrier = {
+            .srcStageMask = srcStageMask,
+            .srcAccessMask = srcAccessMask,
+            .dstStageMask = dstStageMask,
+            .dstAccessMask = dstAccessMask,
+            .oldLayout = oldLayout,
+            .newLayout = newLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = swapChainImages[imageIndex],
+            .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+                                 .baseMipLevel = 0,
+                                 .levelCount = 1,
+                                 .baseArrayLayer = 0,
+                                 .layerCount = 1}};
+        vk::DependencyInfo dependencyInfo = {.dependencyFlags = {},
+                                             .imageMemoryBarrierCount = 1,
+                                             .pImageMemoryBarriers = &barrier};
+        commandBuffer.pipelineBarrier2(dependencyInfo);
+    }
+
   private:
     static uint32_t chooseSwapMinImageCount(
         vk::SurfaceCapabilitiesKHR const &surfaceCapabilities)
@@ -521,6 +600,151 @@ struct glfw_swapchain
     }
 };
 
+struct glfw_pipeline
+{
+    vk::raii::PipelineLayout pipelineLayout = nullptr; // NOTE: 管线布局
+    vk::raii::Pipeline graphicsPipeline = nullptr;
+    glfw_pipeline() = default;
+
+    glfw_pipeline(vk::raii::Device &device, vk::SurfaceFormatKHR &swapChainSurfaceFormat)
+    {
+        createGraphicsPipeline(device, swapChainSurfaceFormat);
+    }
+
+    // NOTE: 创建管线。
+    void createGraphicsPipeline(vk::raii::Device &device,
+                                vk::SurfaceFormatKHR &swapChainSurfaceFormat)
+    {
+        // NOTE: 着色器模块创建
+        vk::raii::ShaderModule shaderModule =
+            createShaderModule(readFile("shaders/09_shader_base.spv"), device);
+
+        // 配置阶段的描述信息
+        vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
+            .stage = vk::ShaderStageFlagBits::eVertex, // 顶点着色阶段
+            .module = shaderModule,
+            .pName = "vertMain"}; // NOTE: 09_shader_base.slang 顶点入口函数
+        vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
+            .stage = vk::ShaderStageFlagBits::eFragment, // 片段着色阶段
+            .module = shaderModule,                      // 指定绑定到的 着色器模块
+            .pName = "fragMain"};
+        // NOTE: 着色器阶段创建：只有两个
+        vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
+                                                            fragShaderStageInfo};
+
+        // NOTE: 这就是描述管道的可编程阶段的全部内容. 这里仅仅配置两个
+
+        // NOTE: =============================固定部分===================================
+
+        //  NOTE: 0: 顶点输入
+        vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+
+        // NOTE: 1: 输入汇编器 🟢
+
+        vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
+            .topology = vk::PrimitiveTopology::eTriangleList};
+
+        // NOTE: 2: 光栅化器 🟢 [Rasterization]
+        vk::PipelineRasterizationStateCreateInfo rasterizer{
+            .depthClampEnable = vk::False,
+            .rasterizerDiscardEnable = vk::False,
+            .polygonMode = vk::PolygonMode::eFill,
+            .cullMode = vk::CullModeFlagBits::eBack,
+            .frontFace = vk::FrontFace::eClockwise,
+            .depthBiasEnable = vk::False,
+            .depthBiasSlopeFactor = 1.0f,
+            .lineWidth = 1.0f};
+
+        // NOTE: 4: 多重采样这是执行抗锯齿的方法之一。
+        vk::PipelineMultisampleStateCreateInfo multisampling{
+            .rasterizationSamples = vk::SampleCountFlagBits::e1,
+            .sampleShadingEnable = vk::False};
+
+        // NOTE: 5: 深度和模板测试: VkPipelineDepthStencilStateCreateInfo
+
+        // NOTE: 6: 颜色混合.在片段着色器返回颜色后，需要将其与帧缓冲区中已有的颜色组合。
+        vk::PipelineColorBlendAttachmentState colorBlendAttachment{
+            .blendEnable = vk::False,
+            .colorWriteMask =
+                vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+        vk::PipelineColorBlendStateCreateInfo colorBlending{.logicOpEnable = vk::False,
+                                                            .logicOp = vk::LogicOp::eCopy,
+                                                            .attachmentCount = 1,
+                                                            .pAttachments =
+                                                                &colorBlendAttachment};
+        // NOTE: 3:选择动态视口和剪刀矩形时，您需要为管道启用各自的动态状态：
+        std::vector dynamicStates = {vk::DynamicState::eViewport,
+                                     vk::DynamicState::eScissor};
+        // 您只需在管线创建时指定它们的计数
+        vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1,
+                                                          .scissorCount = 1};
+
+        vk::PipelineDynamicStateCreateInfo dynamicState{
+            .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+            .pDynamicStates = dynamicStates.data()};
+        // NOTE: 7： 管线布局：这里配置动态值
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+        pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
+
+        // NOTE: =============================固定部分===================================
+
+        // NOTE: 8: 动态渲染: renderPass = nullptr
+        vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo{
+            .colorAttachmentCount = 1,
+            .pColorAttachmentFormats = &swapChainSurfaceFormat.format};
+
+        // NOTE: 填写GraphicsPipelineCreateInfo。定义管线的全部功能
+        // NOTE: 使用结构链，将他们的依赖顺序定义
+        vk::StructureChain<vk::GraphicsPipelineCreateInfo,
+                           vk::PipelineRenderingCreateInfo>
+            pipelineCreateInfoChain = {
+                {.stageCount = 2,
+                 .pStages = shaderStages,
+                 .pVertexInputState = &vertexInputInfo,
+                 .pInputAssemblyState = &inputAssembly,
+                 .pViewportState = &viewportState,
+                 .pRasterizationState = &rasterizer,
+                 .pMultisampleState = &multisampling,
+                 .pColorBlendState = &colorBlending,
+                 .pDynamicState = &dynamicState,
+                 .layout = pipelineLayout,
+                 // renderPass参数设置为nullptr，并在pNext链中包含vk::PipelineRenderingCreateInfo结构
+                 .renderPass = nullptr},
+                {.colorAttachmentCount = 1,
+                 .pColorAttachmentFormats = &swapChainSurfaceFormat.format}};
+
+        // 实际上还有两个参数：basePipelineHandle和basePipelineIndex。
+        // Vulkan允许您通过从现有管道派生来创建新的图形管道。
+        // 管道派生的想法是，当管道与现有管道有很多共同的功能时，设置管道的成本更低，并且在同一父管道之间的切换也可以更快地完成。
+        // vk::GraphicsPipelineCreateInfo pipelineInfo{};
+        // pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+        // pipelineInfo.basePipelineIndex = -1;              // Optional
+
+        // NOTE: 最后，创建图形管道：
+        // 第二个参数（我们已传递参数）引用一个可选对象。
+        // 管道缓存可用于存储和重用与管道创建相关的数据，跨多次调用，甚至跨程序执行（如果缓存存储到文件）。
+        graphicsPipeline = vk::raii::Pipeline(
+            device, nullptr,
+            pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
+
+        // NOTE: 创建管线后，已经非常接近看到屏幕上弹出的东西了
+    }
+
+    // NOTE: 创建着色器模块
+    [[nodiscard]] static vk::raii::ShaderModule createShaderModule(
+        const std::vector<char> &code, vk::raii::Device &device)
+    {
+        // 创建一个着色器模块很简单，我们只需要用字节码和它的长度指定一个指向缓冲区的指针
+        vk::ShaderModuleCreateInfo createInfo{
+            .codeSize = code.size() * sizeof(char),
+            .pCode = reinterpret_cast<const uint32_t *>(code.data())};
+        vk::raii::ShaderModule shaderModule{device, createInfo};
+
+        return shaderModule;
+    }
+};
+
 struct glfw_context
 {
     GLFWwindow *window = nullptr;
@@ -532,6 +756,8 @@ struct glfw_context
 
     glfw_surface surface;
     glfw_swapchain swapchain;
+
+    glfw_pipeline pipeline;
 
     // NOTE: 搭建基本窗口
     void initWindow()
@@ -581,40 +807,11 @@ struct glfw_context
     {
         swapchain.createImageViews(logicalDevice.device);
     }
+
     // NOTE: 创建管线。
     void createGraphicsPipeline()
     {
-        // NOTE: 着色器模块创建
-        vk::raii::ShaderModule shaderModule = createShaderModule(
-            readFile("shaders/09_shader_base.spv"), logicalDevice.device);
-
-        // 配置阶段的描述信息
-        vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
-            .stage = vk::ShaderStageFlagBits::eVertex, // 顶点着色阶段
-            .module = shaderModule,
-            .pName = "vertMain"}; // NOTE: 09_shader_base.slang 顶点入口函数
-        vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
-            .stage = vk::ShaderStageFlagBits::eFragment, // 片段着色阶段
-            .module = shaderModule,                      // 指定绑定到的 着色器模块
-            .pName = "fragMain"};
-        // NOTE: 着色器阶段创建：只有两个
-        vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
-                                                            fragShaderStageInfo};
-
-        // NOTE: 这就是描述管道的可编程阶段的全部内容. 这里仅仅配置两个
-    }
-
-    // NOTE: 创建着色器模块
-    [[nodiscard]] static vk::raii::ShaderModule createShaderModule(
-        const std::vector<char> &code, vk::raii::Device &device)
-    {
-        // 创建一个着色器模块很简单，我们只需要用字节码和它的长度指定一个指向缓冲区的指针
-        vk::ShaderModuleCreateInfo createInfo{
-            .codeSize = code.size() * sizeof(char),
-            .pCode = reinterpret_cast<const uint32_t *>(code.data())};
-        vk::raii::ShaderModule shaderModule{device, createInfo};
-
-        return shaderModule;
+        pipeline = glfw_pipeline(logicalDevice.device, swapchain.swapChainSurfaceFormat);
     }
 };
 
@@ -663,23 +860,23 @@ class HelloTriangleApplication
     }
 };
 
-/*
-[顶点着色器]处理每个输入的顶点。
-它以世界坐标位置、颜色、法线和纹理坐标等属性作为输入。
-其输出是裁剪空间中的最终位置，以及需要传递给片段着色器的属性，如颜色和纹理坐标。
-随后，这些值将由[光栅化器]在各个片段之间进行插值，以生成平滑的渐变效果。
-
-裁剪坐标是来自顶点着色器（vertex
-shader）的四维向量，后续会通过将整个向量除以其最后一个分量，转换为标准化设备坐标（normalized
-device coordinate）。这些标准化设备坐标属于齐次坐标（homogeneous
-coordinates），它们会将帧缓冲区（framebuffer）映射到一个[-1, 1] × [-1,1]的坐标系
-//NOTE: 中心点从 [x,y] -> [0,0]
-*/
 int main()
 {
     try
     {
-        // NOTE: 修改 设备，增加新特性要求。要求队列 同时支持图形和显示的队列
+        // NOTE: 动态渲染: 通过消除对渲染通道和帧缓冲区对象的需求来简化渲染过程.
+        // NOTE: 我们可以在开始渲染时直接指定颜色、深度和模板附件。
+        // NOTE: 使用动态渲染进行命令缓冲区记录
+        /*
+在以前版本的 Vulkan 中，我们需要创建帧缓冲区以将图像视图绑定到渲染通道。然而，随着
+Vulkan 1.3
+中动态渲染的引入，我们现在可以直接渲染到图像视图，而无需创建帧缓冲区或渲染通道。
+
+动态渲染: 具有以下几个优点：
+- 简化代码，需要管理的对象更少
+- 在渲染过程中更改附件时具有更大的灵活性
+- 与现代渲染技术更好的兼容性
+        */
         HelloTriangleApplication app;
         app.run();
     }

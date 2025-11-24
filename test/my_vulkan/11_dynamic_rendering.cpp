@@ -533,6 +533,8 @@ struct glfw_context
     glfw_surface surface;
     glfw_swapchain swapchain;
 
+    vk::raii::PipelineLayout pipelineLayout = nullptr; // NOTE: 管线布局
+
     // NOTE: 搭建基本窗口
     void initWindow()
     {
@@ -581,6 +583,113 @@ struct glfw_context
     {
         swapchain.createImageViews(logicalDevice.device);
     }
+
+    auto fixed_pipeline(vk::raii::Device &device)
+    {
+        // NOTE: 忘记过程去看 08_graphics_pipeline
+        //  NOTE: 0: 顶点输入
+        /**
+        描述了将传递给顶点着色器的顶点数据的格式:
+            绑定：数据之间的间距以及数据是每个顶点还是每个实例（请参阅实例）
+            属性描述：传递给顶点着色器的属性类型，从哪个绑定加载它们以及在哪个偏移处加载
+         */
+        vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+
+        // NOTE: 1: 输入汇编器 🟢
+        /*
+        描述了两件事：将从顶点绘制什么样的几何图形，以及是否应启用原始重启。
+        //`VK_PRIMITIVE_TOPOLOGY_POINT_LIST`：来自顶点的点
+        //`VK_PRIMITIVE_TOPOLOGY_LINE_LIST`：每 2 个顶点之间的直线，不复用
+        //`VK_PRIMITIVE_TOPOLOGY_LINE_STRIP`：每条线的结束顶点用作下一条线的起始顶点
+        //`VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST`：每 3 个顶点组成的三角形，不复用
+        //`VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP`：每个三角形的第二个和第三个顶点用作下一个三角形的前两个顶点
+
+通常，顶点按顺序从顶点缓冲区按索引加载，但是使用
+*元素缓冲区*，您可以自己指定要使用的索引。这允许您执行诸如复用顶点之类的优化。
+        */
+        vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
+            .topology = vk::PrimitiveTopology::eTriangleList};
+
+        // NOTE: 2: 光栅化器 🟢 [Rasterization]
+        // 光栅化器获取顶点着色器中顶点形成的几何形状，并将其转换为片段，以便由片段着色器着色。它还执行深度测试、背面剔除和裁剪测试，并且可以配置为输出填充整个多边形的片段或仅输出边缘（线框渲染）。
+        vk::PipelineRasterizationStateCreateInfo rasterizer{
+            .depthClampEnable = vk::False,
+            .rasterizerDiscardEnable = vk::False,
+            .polygonMode = vk::PolygonMode::eFill,
+            .cullMode = vk::CullModeFlagBits::eBack,
+            .frontFace = vk::FrontFace::eClockwise,
+            .depthBiasEnable = vk::False,
+            .depthBiasSlopeFactor = 1.0f,
+            .lineWidth = 1.0f};
+
+        // NOTE: 4: 多重采样这是执行抗锯齿的方法之一。
+        // 它的工作原理是组合光栅化到同一像素的多个多边形的片段着色器结果。
+        // 这种情况主要发生在边缘，这也是最明显的锯齿伪影发生的地方。
+        vk::PipelineMultisampleStateCreateInfo multisampling{
+            .rasterizationSamples = vk::SampleCountFlagBits::e1,
+            .sampleShadingEnable = vk::False};
+
+        // NOTE: 5: 深度和模板测试: VkPipelineDepthStencilStateCreateInfo
+
+        // NOTE: 6: 颜色混合.在片段着色器返回颜色后，需要将其与帧缓冲区中已有的颜色组合。
+        /*
+        这种转换称为颜色混合，有两种方法可以实现：
+            混合旧值和新值以生成最终颜色
+            使用按位运算组合旧值和新值
+        */
+        // 包含每个附加帧缓冲区的配置
+        // VkPipelineColorBlendStateCreateInfo 则包含全局颜色混合设置
+        vk::PipelineColorBlendAttachmentState colorBlendAttachment{
+            .blendEnable = vk::False,
+            .colorWriteMask =
+                vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+        vk::PipelineColorBlendStateCreateInfo colorBlending{.logicOpEnable = vk::False,
+                                                            .logicOp = vk::LogicOp::eCopy,
+                                                            .attachmentCount = 1,
+                                                            .pAttachments =
+                                                                &colorBlendAttachment};
+
+        // NOTE: 动态状态。在不重新构建管道的前提下，允许放大放小表面范围
+        // NOTE: 视口和剪裁矩形
+        // VkViewport viewport: 视口基本上描述了输出将渲染到的帧缓冲区的区域。这几乎总是
+        // `(0, 0)` 到 `(宽度, 高度)`
+        // VkRect2D scissor:想绘制到整个帧缓冲区，我们将指定一个完全覆盖它的剪裁矩形:
+        // vk::Rect2D{ vk::Offset2D{ 0, 0 }, swapChainExtent }
+
+        /*
+        视口和剪裁矩形可以指定为管线的静态部分，也可以指定为命令缓冲区中设置的动态状态。
+        尽管前者更符合其他状态，但将视口和剪裁状态设置为动态通常很方便，因为它为您提供了更大的灵活性。
+        这非常常见，并且所有实现都可以处理这种动态状态而不会造成性能损失。
+
+如果没有动态状态，则需要在管线中使用 VkPipelineViewportStateCreateInfo
+结构体来设置视口和裁剪矩形。这使得此管线的视口和裁剪矩形变为不可变的。
+对这些值所做的任何更改都需要创建一个具有新值的新管线。
+
+在某些显卡上都可以使用多个视口和裁剪矩形，因此结构体成员引用它们的数组。
+        */
+        // NOTE: 3:选择动态视口和剪刀矩形时，您需要为管道启用各自的动态状态：
+        std::vector dynamicStates = {vk::DynamicState::eViewport,
+                                     vk::DynamicState::eScissor};
+        // 您只需在管线创建时指定它们的计数
+        vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1,
+                                                          .scissorCount = 1};
+
+        vk::PipelineDynamicStateCreateInfo dynamicState{
+            .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+            .pDynamicStates = dynamicStates.data()};
+
+        // NOTE: 7： 管线布局：这里配置动态值
+        // 您可以在着色器中使用 uniform值，它们是类似于动态状态变量的全局变量，
+        // 可以在绘制时更改以改变着色器的行为，而无需重新创建它们。
+        // 通常用于将变换矩阵传递给顶点着色器，或在片段着色器中创建纹理采样器。
+        // 该结构体还指定了推送常量，这是另一种将动态值传递给着色器的方法
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+
+        pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
+
+        // NOTE: 至此，所有固定功能状态都已讲解完毕，管线的可编程 和 非可编程 都提及了
+    }
     // NOTE: 创建管线。
     void createGraphicsPipeline()
     {
@@ -602,6 +711,85 @@ struct glfw_context
                                                             fragShaderStageInfo};
 
         // NOTE: 这就是描述管道的可编程阶段的全部内容. 这里仅仅配置两个
+
+        // NOTE: =============================固定部分===================================
+
+        //  NOTE: 0: 顶点输入
+        vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+
+        // NOTE: 1: 输入汇编器 🟢
+
+        vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
+            .topology = vk::PrimitiveTopology::eTriangleList};
+
+        // NOTE: 2: 光栅化器 🟢 [Rasterization]
+        vk::PipelineRasterizationStateCreateInfo rasterizer{
+            .depthClampEnable = vk::False,
+            .rasterizerDiscardEnable = vk::False,
+            .polygonMode = vk::PolygonMode::eFill,
+            .cullMode = vk::CullModeFlagBits::eBack,
+            .frontFace = vk::FrontFace::eClockwise,
+            .depthBiasEnable = vk::False,
+            .depthBiasSlopeFactor = 1.0f,
+            .lineWidth = 1.0f};
+
+        // NOTE: 4: 多重采样这是执行抗锯齿的方法之一。
+        vk::PipelineMultisampleStateCreateInfo multisampling{
+            .rasterizationSamples = vk::SampleCountFlagBits::e1,
+            .sampleShadingEnable = vk::False};
+
+        // NOTE: 5: 深度和模板测试: VkPipelineDepthStencilStateCreateInfo
+
+        // NOTE: 6: 颜色混合.在片段着色器返回颜色后，需要将其与帧缓冲区中已有的颜色组合。
+        vk::PipelineColorBlendAttachmentState colorBlendAttachment{
+            .blendEnable = vk::False,
+            .colorWriteMask =
+                vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+        vk::PipelineColorBlendStateCreateInfo colorBlending{.logicOpEnable = vk::False,
+                                                            .logicOp = vk::LogicOp::eCopy,
+                                                            .attachmentCount = 1,
+                                                            .pAttachments =
+                                                                &colorBlendAttachment};
+        // NOTE: 3:选择动态视口和剪刀矩形时，您需要为管道启用各自的动态状态：
+        std::vector dynamicStates = {vk::DynamicState::eViewport,
+                                     vk::DynamicState::eScissor};
+        // 您只需在管线创建时指定它们的计数
+        vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1,
+                                                          .scissorCount = 1};
+
+        vk::PipelineDynamicStateCreateInfo dynamicState{
+            .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+            .pDynamicStates = dynamicStates.data()};
+        // NOTE: =============================固定部分===================================
+
+        // NOTE: 7： 管线布局：这里配置动态值
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+
+        // NOTE: 8: 动态渲染: renderPass = nullptr
+        vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo{
+            .colorAttachmentCount = 1,
+            .pColorAttachmentFormats = &swapchain.swapChainSurfaceFormat.format};
+
+        // NOTE: renderPass参数设置为nullptr，因为我们使用动态渲染而不是传统的渲染传递。
+        vk::GraphicsPipelineCreateInfo pipelineInfo{.pNext = &pipelineRenderingCreateInfo,
+                                                    .stageCount = 2,
+                                                    .pStages = shaderStages,
+                                                    .pVertexInputState = &vertexInputInfo,
+                                                    .pInputAssemblyState = &inputAssembly,
+                                                    .pViewportState = &viewportState,
+                                                    .pRasterizationState = &rasterizer,
+                                                    .pMultisampleState = &multisampling,
+                                                    .pColorBlendState = &colorBlending,
+                                                    .pDynamicState = &dynamicState,
+                                                    .layout = pipelineLayout,
+                                                    .renderPass = nullptr};
+
+        pipelineLayout =
+            vk::raii::PipelineLayout(logicalDevice.device, pipelineLayoutInfo);
+
+        // NOTE: 9: 命令缓冲区记录
+        // 使用 vk::CommandBuffer::beginRendering 渲染到指定的附件
     }
 
     // NOTE: 创建着色器模块
@@ -663,23 +851,13 @@ class HelloTriangleApplication
     }
 };
 
-/*
-[顶点着色器]处理每个输入的顶点。
-它以世界坐标位置、颜色、法线和纹理坐标等属性作为输入。
-其输出是裁剪空间中的最终位置，以及需要传递给片段着色器的属性，如颜色和纹理坐标。
-随后，这些值将由[光栅化器]在各个片段之间进行插值，以生成平滑的渐变效果。
-
-裁剪坐标是来自顶点着色器（vertex
-shader）的四维向量，后续会通过将整个向量除以其最后一个分量，转换为标准化设备坐标（normalized
-device coordinate）。这些标准化设备坐标属于齐次坐标（homogeneous
-coordinates），它们会将帧缓冲区（framebuffer）映射到一个[-1, 1] × [-1,1]的坐标系
-//NOTE: 中心点从 [x,y] -> [0,0]
-*/
 int main()
 {
     try
     {
-        // NOTE: 修改 设备，增加新特性要求。要求队列 同时支持图形和显示的队列
+        // NOTE: 动态渲染: 动态渲染通过消除渲染传递和帧缓冲区对象的需要来简化渲染过程。
+        // 我们可以在开始渲染时直接指定颜色、深度和模板附件。
+        // NOTE: 动态更新，但是不重新创建管线，这就是动态渲染到了的不牺牲性能带来的灵活性
         HelloTriangleApplication app;
         app.run();
     }
