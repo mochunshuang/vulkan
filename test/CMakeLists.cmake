@@ -55,3 +55,16 @@ auto_add_ray_tracing("ray_tracing/next" "stb")
 file(COPY ${CMAKE_SOURCE_DIR}/test/ray_tracing/images
     DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/ray_tracing
     FILES_MATCHING PATTERN "*")
+
+# my_vulkan
+auto_add_vulkan_module("my_vulkan")
+
+file(COPY ${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/my_vulkan
+    FILES_MATCHING PATTERN "*")
+file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/textures
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/my_vulkan
+    FILES_MATCHING PATTERN "*")
+file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/models
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/my_vulkan
+    FILES_MATCHING PATTERN "*")
