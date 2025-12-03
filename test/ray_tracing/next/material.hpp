@@ -35,7 +35,7 @@ class lambertian : public material
 {
   public:
     lambertian(const color &albedo) : tex(std::make_shared<solid_color>(albedo)) {}
-    lambertian(const std::shared_ptr<texture> &tex) : tex(tex) {}
+    lambertian(const std::shared_ptr<vulkan_texture> &tex) : tex(tex) {}
 
     /*
     r_in：入射光线
@@ -61,7 +61,7 @@ class lambertian : public material
     }
 
   private:
-    std::shared_ptr<texture> tex;
+    std::shared_ptr<vulkan_texture> tex;
 };
 
 class metal : public material
@@ -149,7 +149,7 @@ NOTE: 发光材料
 class diffuse_light : public material
 {
   public:
-    diffuse_light(std::shared_ptr<texture> tex) : tex(tex) {}
+    diffuse_light(std::shared_ptr<vulkan_texture> tex) : tex(tex) {}
     diffuse_light(const color &emit) : tex(std::make_shared<solid_color>(emit)) {}
 
     color emitted(double u, double v, const point3 &p) const override
@@ -158,7 +158,7 @@ class diffuse_light : public material
     }
 
   private:
-    std::shared_ptr<texture> tex;
+    std::shared_ptr<vulkan_texture> tex;
 };
 
 /*
@@ -175,7 +175,7 @@ class isotropic : public material
 {
   public:
     isotropic(const color &albedo) : tex(std::make_shared<solid_color>(albedo)) {}
-    isotropic(std::shared_ptr<texture> tex) : tex(tex) {}
+    isotropic(std::shared_ptr<vulkan_texture> tex) : tex(tex) {}
 
     bool scatter(const ray &r_in, const hit_record &rec, color &attenuation,
                  ray &scattered) const override
@@ -191,6 +191,6 @@ class isotropic : public material
     }
 
   private:
-    std::shared_ptr<texture> tex;
+    std::shared_ptr<vulkan_texture> tex;
 };
 // NOLINTEND

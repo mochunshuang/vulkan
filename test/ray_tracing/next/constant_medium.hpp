@@ -56,7 +56,7 @@ class constant_medium : public hittable // NOLINT
     // 适用：球体、立方体、圆锥体等凸形状
     // 不适用：圆环体、有孔的物体等非凸形状
     constant_medium(std::shared_ptr<hittable> boundary, double density,
-                    const std::shared_ptr<texture> &tex)
+                    const std::shared_ptr<vulkan_texture> &tex)
         : boundary(std::move(boundary)),
           neg_inv_density(-1 / density), // 预计算负的密度倒数，用于指数衰减计算
           phase_function(make_shared<isotropic>(tex)) // 各向同性散射材质

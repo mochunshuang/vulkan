@@ -68,3 +68,6 @@ file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/textures
 file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/models
     DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/my_vulkan
     FILES_MATCHING PATTERN "*")
+
+#
+auto_add_vulkan_module("raii")

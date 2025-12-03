@@ -20,15 +20,15 @@ NOTE: 在实践中，我们反过来实现这个过程：给定对象上的某�
 按照惯例，纹理坐标命名为u和v。
 
 */
-class texture // NOLINT
+class vulkan_texture // NOLINT
 {
   public:
-    virtual ~texture() = default;
+    virtual ~vulkan_texture() = default;
 
     [[nodiscard]] virtual color value(double u, double v, const point3 &p) const = 0;
 };
 
-class solid_color : public texture
+class solid_color : public vulkan_texture
 {
   public:
     explicit solid_color(const color &albedo) : albedo_(albedo) {}
@@ -48,12 +48,12 @@ class solid_color : public texture
 };
 
 // 这是一个棋盘格纹理的实现
-class checker_texture : public texture // NOLINT
+class checker_texture : public vulkan_texture // NOLINT
 {
   public:
     // 方式1：用现成的纹理对象
-    checker_texture(double scale, std::shared_ptr<texture> even,
-                    std::shared_ptr<texture> odd)
+    checker_texture(double scale, std::shared_ptr<vulkan_texture> even,
+                    std::shared_ptr<vulkan_texture> odd)
         : invScale_(1.0 / scale), even_(std::move(even)), odd_(std::move(odd))
     {
     }
@@ -99,12 +99,12 @@ class checker_texture : public texture // NOLINT
     invScale_：1.0/scale，为了计算效率
     */
     double invScale_;
-    std::shared_ptr<texture> even_;
-    std::shared_ptr<texture> odd_;
+    std::shared_ptr<vulkan_texture> even_;
+    std::shared_ptr<vulkan_texture> odd_;
 };
 
 // NOTE: uv 映射的图像纹理。 uv 的映射需要
-class image_texture : public texture // NOLINT
+class image_texture : public vulkan_texture // NOLINT
 {
   public:
     // 构造函数：从图像文件加载纹理
@@ -143,7 +143,7 @@ class image_texture : public texture // NOLINT
     rtw_image image_; // 存储图像数据的对象
 };
 
-class noise_texture_nosmooth : public texture // NOLINT
+class noise_texture_nosmooth : public vulkan_texture // NOLINT
 {
   public:
     noise_texture_nosmooth() = default;
@@ -158,7 +158,7 @@ class noise_texture_nosmooth : public texture // NOLINT
     perlin noise_;
 };
 
-class noise_texture : public texture // NOLINT
+class noise_texture : public vulkan_texture // NOLINT
 {
   public:
     explicit noise_texture(double scale) : scale(scale) {}
@@ -174,7 +174,7 @@ class noise_texture : public texture // NOLINT
     double scale;
 };
 
-class noise_texture_with_vec : public texture // NOLINT
+class noise_texture_with_vec : public vulkan_texture // NOLINT
 {
   public:
     explicit noise_texture_with_vec(double scale) : scale(scale) {}
@@ -196,7 +196,7 @@ class noise_texture_with_vec : public texture // NOLINT
     double scale;
 };
 
-class noise_texture_with_vec_and_turb : public texture // NOLINT
+class noise_texture_with_vec_and_turb : public vulkan_texture // NOLINT
 {
   public:
     explicit noise_texture_with_vec_and_turb(double scale) : scale(scale) {}
@@ -211,7 +211,7 @@ class noise_texture_with_vec_and_turb : public texture // NOLINT
     double scale;
 };
 
-class noise_texture_with_vec_and_turb_phase : public texture // NOLINT
+class noise_texture_with_vec_and_turb_phase : public vulkan_texture // NOLINT
 {
   public:
     explicit noise_texture_with_vec_and_turb_phase(double scale) : scale(scale) {}
