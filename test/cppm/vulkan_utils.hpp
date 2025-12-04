@@ -15,6 +15,24 @@ namespace vulkan
             throw std::runtime_error("Detected Vulkan error: ");
     }
 
+    static constexpr uint32_t findMemoryType(VkPhysicalDevice &physicalDevice, // NOLINT
+                                             uint32_t typeFilter,
+                                             VkMemoryPropertyFlags properties)
+    {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        ::vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+        {
+            auto &memoryTypes = memProperties.memoryTypes[i]; // NOLINT
+            if (((typeFilter & (1 << i)) != 0U) &&
+                (memoryTypes.propertyFlags & properties) == properties)
+            {
+                return i;
+            }
+        }
+        throw std::runtime_error("failed to find suitable memory type!");
+    }
+
     template <typename T>
     static consteval auto sType() -> VkStructureType // NOLINT
     {
@@ -101,8 +119,13 @@ namespace vulkan
             return VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         else if constexpr (std::is_same_v<T, VkImageMemoryBarrier>)
             return VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        else if constexpr (std::is_same_v<T, VkDescriptorPoolCreateInfo>)
+            return VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        else if constexpr (std::is_same_v<T, VkDescriptorSetAllocateInfo>)
+            return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         else
             // static_assert(false, "Unknown Vulkan structure type");
             std::terminate();
     }
+
 }; // namespace vulkan
