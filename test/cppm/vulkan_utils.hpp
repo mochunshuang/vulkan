@@ -32,6 +32,64 @@ namespace vulkan
         }
         throw std::runtime_error("failed to find suitable memory type!");
     }
+    static constexpr void createBuffer(VkPhysicalDevice &physicalDevice, VkDevice &device,
+                                       VkBuffer &buffer, VkDeviceMemory &bufferMemory,
+                                       VkBufferCreateInfo &createInfo,
+                                       VkMemoryPropertyFlags properties)
+    {
+        if (::vkCreateBuffer(device, &createInfo, nullptr, &buffer) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create buffer!");
+        }
+
+        VkMemoryRequirements memRequirements;
+        ::vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+        VkMemoryAllocateInfo allocInfo = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = memRequirements.size,
+            .memoryTypeIndex = findMemoryType(
+                physicalDevice, memRequirements.memoryTypeBits, properties)};
+
+        if (::vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to allocate buffer memory!");
+        }
+        ::vkBindBufferMemory(device, buffer, bufferMemory, 0);
+    }
+    static constexpr void createImage(VkPhysicalDevice &physicalDevice, VkDevice &device,
+                                      VkImage &image, VkDeviceMemory &imageMemory,
+                                      VkImageCreateInfo &imageInfo,
+                                      VkMemoryPropertyFlags properties)
+    {
+
+        if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create image!");
+        }
+
+        VkMemoryRequirements memRequirements;
+        vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+        VkMemoryAllocateInfo allocInfo{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = memRequirements.size,
+            .memoryTypeIndex = findMemoryType(
+                physicalDevice, memRequirements.memoryTypeBits, properties)};
+
+        if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+            throw std::runtime_error("failed to allocate image memory!");
+        if (::vkBindImageMemory(device, image, imageMemory, 0) != VK_SUCCESS)
+            throw std::runtime_error("failed to bind image memory!");
+    }
+    static constexpr void createImageView(VkDevice &device, VkImageView &imageView,
+                                          VkImageViewCreateInfo &viewInfo)
+    {
+        if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create texture image view!");
+        }
+    }
 
     template <typename T>
     static consteval auto sType() -> VkStructureType // NOLINT
