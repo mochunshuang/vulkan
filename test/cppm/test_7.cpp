@@ -1057,6 +1057,7 @@ namespace vulkan
             createDescriptorSetLayout(device);
         }
 
+        // NOTE: 大小可以静态期确定吧：descriptorSetLayout消费descriptorPool
         void createDescriptorPool(VkDevice &device, size_t maxObjects,
                                   size_t maxSwapChainImages)
         {
@@ -1073,6 +1074,8 @@ namespace vulkan
                 .sType = sType<VkDescriptorPoolCreateInfo>(),
                 .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
                 .maxSets = static_cast<uint32_t>(maxObjects * maxSwapChainImages),
+                // failed to allocate descriptor sets!
+                //  .maxSets = static_cast<uint32_t>(2 * maxSwapChainImages):
                 .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
                 .pPoolSizes = poolSizes.data()};
 
@@ -1333,7 +1336,7 @@ namespace vulkan
                    size_t maxSwapChainImages)
         {
             context = &ctx;
-            constexpr auto k_max_obj_count = 10;
+            constexpr auto k_max_obj_count = 3; // NOTE:已经是最小的了。界面就3个一样的模型
             descriptor_resource.setup(ctx.device, k_max_obj_count,
                                       maxSwapChainImages); // NOTE: 先创建
             createGraphicsPipeline(swapChainSurfaceFormat);
