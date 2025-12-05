@@ -1025,7 +1025,6 @@ namespace vulkan
 
             // c15: colorImage 在 deepImage 之前
             colorImage.setup(ctx, swapChainExtent, swapChainSurfaceFormat.format);
-
             deepImage.setup(ctx, swapChainExtent);
         }
         void teardown() noexcept
