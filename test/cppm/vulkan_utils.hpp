@@ -181,6 +181,8 @@ namespace vulkan
             return VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         else if constexpr (std::is_same_v<T, VkDescriptorSetAllocateInfo>)
             return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        else if constexpr (std::is_same_v<T, VkPipelineDepthStencilStateCreateInfo>)
+            return VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         else
             // static_assert(false, "Unknown Vulkan structure type");
             std::terminate();

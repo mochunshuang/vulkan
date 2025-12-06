@@ -33,6 +33,18 @@ namespace glfw
             glfwSetKeyCallback(window_, keyCallback);
             glfwSetCursorPosCallback(window_, cursorPositionCallback);
             glfwSetMouseButtonCallback(window_, mouseButtonCallback);
+            glfwSetScrollCallback(window_, scrollCallback);
+
+            // 隐藏并捕获光标以实现平滑的相机旋转
+            // ::glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+            // 初始化输入状态
+            inputState.leftMousePressed = false;
+            inputState.rightMousePressed = false;
+            inputState.middleMousePressed = false;
+            inputState.firstMouse = true;
+            inputState.lastX = static_cast<float>(width) / 2.0f;  // NOLINT
+            inputState.lastY = static_cast<float>(height) / 2.0f; // NOLINT
         }
         void teardown() noexcept
         {
@@ -79,6 +91,16 @@ namespace glfw
             return framebufferResized_;
         }
 
+        // 新增：获取输入状态
+        [[nodiscard]] const auto &getInputState() const noexcept
+        {
+            return inputState;
+        }
+        [[nodiscard]] auto &refInputState() noexcept
+        {
+            return inputState;
+        }
+
         [[nodiscard]] static std::vector<const char *> getRequiredSurfaceExtensions()
         {
             uint32_t glfw_extension_count{0};
@@ -98,6 +120,42 @@ namespace glfw
         window_pointer window_ = nullptr;
         bool framebufferResized_{};
 
+        // 输入状态结构体 // NOLINTBEGIN
+        struct InputState
+        {
+            bool leftMousePressed = false;
+            bool rightMousePressed = false;
+            bool middleMousePressed = false;
+            bool firstMouse = true;
+            float lastX = 0.0f;
+            float lastY = 0.0f;
+            float xOffset = 0.0f;
+            float yOffset = 0.0f;
+            float scrollOffset = 0.0f;
+
+            // 键盘状态
+            bool keyW = false;
+            bool keyS = false;
+            bool keyA = false;
+            bool keyD = false;
+            bool keyQ = false;
+            bool keyE = false;
+
+            // 鼠标拖动
+            float dragDeltaX = 0.0f;
+            float dragDeltaY = 0.0f;
+
+            // 清空每帧的增量
+            void clearFrameDeltas()
+            {
+                xOffset = 0.0f;
+                yOffset = 0.0f;
+                scrollOffset = 0.0f;
+                dragDeltaX = 0.0f;
+                dragDeltaY = 0.0f;
+            }
+        } inputState; // NOLINTEND
+
         static void glfwLibInit() noexcept
         {
             ::glfwInit();
@@ -116,59 +174,132 @@ namespace glfw
         static void keyCallback(GLFWwindow *window, int key, int scancode, int action,
                                 int mods)
         {
-            // 1. 处理 ESC 键：退出程序
+            auto *app = static_cast<Window *>(::glfwGetWindowUserPointer(window));
+            auto &input = app->inputState;
+
+            // 处理 ESC 键：退出程序
             if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             {
                 std::cout << "KEY GLFW_KEY_ESCAPE: PRESS" << '\n';
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
             }
 
-            // 2. 新增：处理空格键
+            // 处理空格键
             if (key == GLFW_KEY_SPACE)
             {
                 if (action == GLFW_PRESS)
                 {
                     std::cout << "KEY SPACE: PRESSED" << '\n';
-                    // 在这里添加空格键按下的逻辑，例如：
-                    // - 切换相机状态
-                    // - 暂停/继续游戏
-                    // - 触发角色跳跃
                 }
                 else if (action == GLFW_RELEASE)
                 {
                     std::cout << "KEY SPACE: RELEASED" << '\n';
-                    // 在这里添加空格键释放的逻辑
                 }
-                // 注意：GLFW_REPEAT 事件需要启用按键重复（默认禁用）
                 else if (action == GLFW_REPEAT)
                 {
                     std::cout << "KEY SPACE: REPEATING" << '\n';
                 }
             }
 
-            // 3. 你可以继续添加其他按键的判断
-            if (key == GLFW_KEY_W)
+            // 处理 QWEASD 按键
+            bool value = (action == GLFW_PRESS || action == GLFW_REPEAT);
+            switch (key)
             {
-                // 处理W键（常用于前进）
+            case GLFW_KEY_W:
+                input.keyW = value;
+                break;
+            case GLFW_KEY_S:
+                input.keyS = value;
+                break;
+            case GLFW_KEY_A:
+                input.keyA = value;
+                break;
+            case GLFW_KEY_D:
+                input.keyD = value;
+                break;
+            case GLFW_KEY_Q:
+                input.keyQ = value;
+                break;
+            case GLFW_KEY_E:
+                input.keyE = value;
+                break;
             }
         }
 
         // Callback for mouse movement
         static void cursorPositionCallback(GLFWwindow *window, double xpos, double ypos)
         {
-            // Handle mouse movement
-            std::cout << "Mouse position: " << xpos << ", " << ypos << '\n';
+            auto *app = static_cast<Window *>(::glfwGetWindowUserPointer(window));
+            auto &input = app->inputState;
+
+            if (input.firstMouse)
+            {
+                input.lastX = static_cast<float>(xpos);
+                input.lastY = static_cast<float>(ypos);
+                input.firstMouse = false;
+            }
+
+            // 计算鼠标移动偏移量
+            input.xOffset = static_cast<float>(xpos) - input.lastX;
+            input.yOffset = static_cast<float>(ypos) - input.lastY;
+
+            // 如果正在拖动，记录拖动增量
+            if (input.leftMousePressed || input.rightMousePressed ||
+                input.middleMousePressed)
+            {
+                input.dragDeltaX = input.xOffset;
+                input.dragDeltaY = input.yOffset;
+            }
+
+            input.lastX = static_cast<float>(xpos);
+            input.lastY = static_cast<float>(ypos);
         }
 
         // Callback for mouse buttons
         static void mouseButtonCallback(GLFWwindow *window, int button, int action,
                                         int mods)
         {
-            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+            auto *app = static_cast<Window *>(::glfwGetWindowUserPointer(window));
+            auto &input = app->inputState;
+
+            bool pressed = (action == GLFW_PRESS);
+
+            if (button == GLFW_MOUSE_BUTTON_LEFT)
             {
-                // Handle left mouse button press
-                std::cout << "Left mouse button pressed" << '\n';
+                input.leftMousePressed = pressed;
+                if (pressed)
+                {
+                    // 重置第一次鼠标标志，避免跳跃
+                    input.firstMouse = true;
+                }
             }
+            else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+            {
+                input.rightMousePressed = pressed;
+                if (pressed)
+                {
+                    // 重置第一次鼠标标志，避免跳跃
+                    input.firstMouse = true;
+                }
+            }
+            else if (button == GLFW_MOUSE_BUTTON_MIDDLE)
+            {
+                input.middleMousePressed = pressed;
+                if (pressed)
+                {
+                    // 重置第一次鼠标标志，避免跳跃
+                    input.firstMouse = true;
+                }
+            }
+        }
+
+        // Callback for mouse scroll
+        static void scrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+        {
+            auto *app = static_cast<Window *>(::glfwGetWindowUserPointer(window));
+            auto &input = app->inputState;
+
+            input.scrollOffset = static_cast<float>(yoffset);
         }
         // NOLINTEND
     };
