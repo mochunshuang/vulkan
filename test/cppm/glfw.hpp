@@ -112,7 +112,8 @@ namespace glfw
         constexpr void createVkSurfaceKHR(VkInstance &instance,
                                           VkSurfaceKHR &surface) const
         {
-            if (::glfwCreateWindowSurface(instance, data(), nullptr, &surface) != 0)
+            if (::glfwCreateWindowSurface(instance, data(), nullptr, &surface) !=
+                VK_SUCCESS)
                 throw std::runtime_error("failed to create window surface!");
         }
 
@@ -263,6 +264,20 @@ namespace glfw
             auto &input = app->inputState;
 
             bool pressed = (action == GLFW_PRESS);
+
+            // NOTE:鼠标中键无用，滚轮有用
+            //  添加详细调试信息
+            //  std::cout << "Mouse button callback - Button: " << button
+            //            << ", Action: " << action << ", Mods: " << mods << std::endl;
+            //  // 打印具体的按钮名称
+            //  if (button == GLFW_MOUSE_BUTTON_LEFT)
+            //      std::cout << "  LEFT button" << std::endl;
+            //  else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+            //      std::cout << "  RIGHT button" << std::endl;
+            //  else if (button == GLFW_MOUSE_BUTTON_MIDDLE)
+            //      std::cout << "  MIDDLE button" << std::endl;
+            //  else
+            //      std::cout << "  OTHER button: " << button << std::endl;
 
             if (button == GLFW_MOUSE_BUTTON_LEFT)
             {
