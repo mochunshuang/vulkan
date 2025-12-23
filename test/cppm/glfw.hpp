@@ -60,7 +60,7 @@ namespace glfw
         {
             ::glfwPollEvents();
         }
-        void waitGoodFramebufferSize()
+        void waitGoodFramebufferSize() const noexcept
         {
             int width, height; // NOLINT
             ::glfwGetFramebufferSize(window_, &width, &height);

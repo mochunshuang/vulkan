@@ -25,6 +25,7 @@ if(MODULE_ENABLE)
 
     # 添加 Vulkan 库链接
     target_link_libraries(vulkan_modules PUBLIC "${VULKAN_SDK_DIR}/Lib/vulkan-1.lib")
+    add_library(vulkan_dep ALIAS vulkan_modules)
 else()
     add_library(vulkan_dep STATIC IMPORTED)
     set_target_properties(vulkan_dep PROPERTIES

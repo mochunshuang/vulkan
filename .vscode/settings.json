@@ -496,6 +496,15 @@
             "backgroundColor": "transparent",
             "bold": true,
             "italic": false
+        },
+        {
+            "tag": "diff:",
+            "color": "#FFFFFF",
+            "strikethrough": false,
+            "underline": false,
+            "backgroundColor": "transparent",
+            "bold": true,
+            "italic": false
         }
     ]
 }

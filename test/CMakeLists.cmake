@@ -7,17 +7,21 @@ include(${CMAKE_SOURCE_DIR}/test/script/auto_add_vulkan_module.cmake)
 include(${CMAKE_SOURCE_DIR}/test/script/auto_compile_slang_shaders.cmake)
 include(${CMAKE_SOURCE_DIR}/test/script/auto_compile_glslc_shaders.cmake)
 include(${CMAKE_SOURCE_DIR}/test/script/auto_add_ray_tracing.cmake)
+include(${CMAKE_SOURCE_DIR}/test/script/auto_add_framework.cmake)
 
-# 首先添加普通源文件
-add_executable(base)
-target_sources(
-    base
-    PRIVATE
-    "test/base/base.cpp"
-)
-target_link_libraries(base PRIVATE vulkan_modules)
+if(MODULE_ENABLE)
+    # 首先添加普通源文件
+    add_executable(base)
+    target_sources(
+        base
+        PRIVATE
+        "test/base/base.cpp"
+    )
+    target_link_libraries(base PRIVATE vulkan_modules)
 
-auto_add_vulkan_module("vulkan")
+    auto_add_vulkan_module("vulkan")
+endif()
+
 auto_compile_slang_shaders(
     compile_all_vulkan_shaders
     ${CMAKE_SOURCE_DIR}/test/vulkan/shaders
@@ -71,3 +75,21 @@ file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/models
 
 #
 auto_add_vulkan_module("raii")
+
+auto_add_framework("framework/wsi")
+auto_add_framework("framework")
+file(COPY ${TEST_EXECUTABLE_OUTPUT_PATH}/vulkan/shaders
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/framework
+    FILES_MATCHING PATTERN "*")
+file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/textures
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/framework
+    FILES_MATCHING PATTERN "*")
+file(COPY ${CMAKE_SOURCE_DIR}/test/vulkan/models
+    DESTINATION ${TEST_EXECUTABLE_OUTPUT_PATH}/framework
+    FILES_MATCHING PATTERN "*")
+auto_compile_vert_shaders(compile_all_framework_vert
+    ${CMAKE_SOURCE_DIR}/test/framework/shaders
+    ${TEST_EXECUTABLE_OUTPUT_PATH}/framework/shaders)
+auto_compile_frag_shaders(compile_all_framework_frag
+    ${CMAKE_SOURCE_DIR}/test/framework/shaders
+    ${TEST_EXECUTABLE_OUTPUT_PATH}/framework/shaders)

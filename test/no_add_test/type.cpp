@@ -282,5 +282,23 @@ void test_partial_initialization()
         using T = std::tuple<A, B>;
         T a{{}, {}};
     }
+
+    {
+        struct A
+        {
+            static constexpr void function() {}
+        };
+        struct B : A
+        {
+            int b;
+            double c;
+
+            int fun()
+            {
+                return 0;
+            }
+        };
+        auto b = B{.b = 1, .c = 3.0};
+    }
 }
 // NOLINTEND
