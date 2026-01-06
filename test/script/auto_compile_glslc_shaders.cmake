@@ -81,3 +81,63 @@ function(auto_compile_frag_shaders NAME SHADER_INPUT_DIR SHADER_OUTPUT_DIR)
 
     add_custom_target(${NAME} DEPENDS ${all_targets})
 endfunction()
+
+# NOTE: 没有重载
+function(auto_compile_vert_shaders_with_prefix NAME SHADER_INPUT_DIR SHADER_OUTPUT_DIR PREFIX)
+    # SHADER_OUTPUT_DIR taget
+    add_custom_command(
+        OUTPUT ${SHADER_OUTPUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_OUTPUT_DIR}
+    )
+
+    # store all *.vert
+    file(GLOB files "${SHADER_INPUT_DIR}/*.vert")
+
+    set(all_targets "")
+
+    foreach(cur_file ${files})
+        # 获取文件名（不含路径和扩展名）
+        get_filename_component(shader_name ${cur_file} NAME_WE)
+
+        set(target_name "${PREFIX}-${shader_name}_vert")
+        set(output_file "${shader_name}_vert.spv")
+
+        add_compile_glslc_shader(
+            ${target_name}
+            "${cur_file}"
+            "${SHADER_OUTPUT_DIR}/${output_file}"
+        )
+        list(APPEND all_targets ${target_name})
+    endforeach()
+
+    add_custom_target(${NAME} DEPENDS ${all_targets})
+endfunction()
+
+function(auto_compile_frag_shaders_with_prefix NAME SHADER_INPUT_DIR SHADER_OUTPUT_DIR PREFIX)
+    # SHADER_OUTPUT_DIR taget
+    add_custom_command(
+        OUTPUT ${SHADER_OUTPUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_OUTPUT_DIR}
+    )
+
+    # store all *.frag
+    file(GLOB files "${SHADER_INPUT_DIR}/*.frag")
+
+    set(all_targets "")
+
+    foreach(cur_file ${files})
+        get_filename_component(shader_name ${cur_file} NAME_WE)
+
+        set(target_name "${PREFIX}-${shader_name}_frag")
+        set(output_file "${shader_name}_frag.spv")
+
+        add_compile_glslc_shader(
+            ${target_name}
+            "${cur_file}"
+            "${SHADER_OUTPUT_DIR}/${output_file}"
+        )
+        list(APPEND all_targets ${target_name})
+    endforeach()
+
+    add_custom_target(${NAME} DEPENDS ${all_targets})
+endfunction()

@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js 3D场景演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c2461 0%, #1e3799 100%);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #00b4db, #0083b0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.8;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .scene-container {
+            flex: 1;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        #three-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls-panel {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            max-height: calc(100vh - 180px);
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            border-bottom: 2px solid rgba(79, 195, 247, 0.3);
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #81d4fa;
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.8);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .checkbox-container input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to right, #00b4db, #0083b0);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            font-size: 1rem;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+
+        .instructions {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #81d4fa;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                padding: 10px;
+            }
+
+            .controls-panel {
+                width: 100%;
+                max-height: 40vh;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Three.js 3D场景演示</h1>
+        <p class="subtitle">一个交互式的WebGL 3D场景，包含几何体、灯光、材质和轨道控制。使用滑块和按钮调整场景参数。</p>
+    </div>
+
+    <div class="container">
+        <div class="scene-container">
+            <canvas id="three-canvas"></canvas>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <h2>场景控制</h2>
+
+                <div class="slider-container">
+                    <label for="rotation-speed">旋转速度: <span id="rotation-speed-value">0.5</span></label>
+                    <input type="range" id="rotation-speed" min="0" max="1" step="0.05" value="0.5">
+                </div>
+
+                <div class="slider-container">
+                    <label for="cube-scale">立方体尺寸: <span id="cube-scale-value">1.0</span></label>
+                    <input type="range" id="cube-scale" min="0.5" max="2" step="0.1" value="1.0">
+                </div>
+
+                <div class="slider-container">
+                    <label for="light-intensity">灯光强度: <span id="light-intensity-value">1.0</span></label>
+                    <input type="range" id="light-intensity" min="0.1" max="3" step="0.1" value="1.0">
+                </div>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="auto-rotate" checked>
+                    <label for="auto-rotate">自动旋转</label>
+                </div>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="show-grid" checked>
+                    <label for="show-grid">显示网格</label>
+                </div>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="show-axes" checked>
+                    <label for="show-axes">显示坐标轴</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h2>材质与颜色</h2>
+
+                <h3>立方体颜色</h3>
+                <div class="button-group">
+                    <button class="button" id="color-red">红色</button>
+                    <button class="button" id="color-blue">蓝色</button>
+                    <button class="button" id="color-green">绿色</button>
+                </div>
+
+                <h3>材质类型</h3>
+                <div class="button-group">
+                    <button class="button" id="material-standard">标准材质</button>
+                    <button class="button" id="material-wireframe">线框材质</button>
+                </div>
+
+                <button class="button" id="add-sphere">添加球体</button>
+                <button class="button" id="reset-scene">重置场景</button>
+            </div>
+
+            <div class="instructions">
+                <h3>交互指南</h3>
+                <ul>
+                    <li><strong>鼠标左键拖动:</strong> 旋转场景</li>
+                    <li><strong>鼠标右键拖动:</strong> 平移场景</li>
+                    <li><strong>鼠标滚轮:</strong> 缩放场景</li>
+                    <li><strong>双击物体:</strong> 聚焦到该物体</li>
+                    <li>使用右侧控制面板调整场景参数</li>
+                </ul>
+            </div>
+
+            <div class="status">
+                物体数量: <span id="object-count">2</span> | 帧率: <span id="fps">60</span> FPS
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Three.js演示 | 使用Three.js r182构建 | 使用鼠标与控件交互
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "../three.js-r182/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        // 导入Three.js核心模块
+        import * as THREE from '../three.js-r182/build/three.module.js';
+        // 导入轨道控制器
+        import { OrbitControls } from '../three.js-r182/examples/jsm/controls/OrbitControls.js';
+        // 导入GUI库（用于调试，这里我们使用自定义UI）
+
+        // 1. 创建场景
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a1a2a);
+
+        // 2. 创建相机
+        const camera = new THREE.PerspectiveCamera(
+            75, // 视场角
+            window.innerWidth / window.innerHeight, // 宽高比
+            0.1, // 近平面
+            1000 // 远平面
+        );
+        camera.position.set(5, 5, 5);
+        camera.lookAt(0, 0, 0);
+
+        // 3. 创建渲染器
+        const canvas = document.getElementById('three-canvas');
+        const renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            antialias: true,
+            alpha: true
+        });
+        renderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // 4. 添加轨道控制器
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.screenSpacePanning = false;
+        controls.minDistance = 2;
+        controls.maxDistance = 50;
+        controls.maxPolarAngle = Math.PI / 2;
+
+        // 5. 添加光源
+        // 环境光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        // 方向光
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        // 点光源
+        const pointLight = new THREE.PointLight(0x4fc3f7, 1, 100);
+        pointLight.position.set(0, 5, 5);
+        pointLight.castShadow = true;
+        scene.add(pointLight);
+
+        // 点光源可视化
+        const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.5);
+        scene.add(pointLightHelper);
+
+        // 6. 添加物体
+        // 创建立方体
+        const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const cubeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00a8ff,
+            roughness: 0.3,
+            metalness: 0.5
+        });
+        const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+        cube.position.set(0, 0.5, 0);
+        scene.add(cube);
+
+        // 创建平面（地面）
+        const planeGeometry = new THREE.PlaneGeometry(20, 20);
+        const planeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a3a5f,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        // 添加网格辅助
+        const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+        scene.add(gridHelper);
+
+        // 添加坐标轴辅助
+        const axesHelper = new THREE.AxesHelper(5);
+        scene.add(axesHelper);
+
+        // 7. 动画循环
+        let clock = new THREE.Clock();
+        let rotationSpeed = 0.5;
+        let autoRotate = true;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            // 更新控制器
+            controls.update();
+
+            // 自动旋转立方体
+            if (autoRotate) {
+                cube.rotation.x += delta * rotationSpeed * 0.5;
+                cube.rotation.y += delta * rotationSpeed;
+            }
+
+            // 点光源轻微动画
+            const time = Date.now() * 0.001;
+            pointLight.position.x = Math.sin(time) * 3;
+            pointLight.position.z = Math.cos(time) * 3;
+
+            // 渲染场景
+            renderer.render(scene, camera);
+
+            // 更新FPS显示
+            updateFPS(delta);
+        }
+
+        // 8. 窗口大小调整处理
+        function onWindowResize() {
+            const container = canvas.parentElement;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        window.addEventListener('resize', onWindowResize);
+
+        // 9. FPS计数器
+        let frameCount = 0;
+        let lastTime = performance.now();
+        let fps = 60;
+
+        function updateFPS(delta) {
+            frameCount++;
+            const currentTime = performance.now();
+
+            if (currentTime >= lastTime + 1000) {
+                fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+                document.getElementById('fps').textContent = fps;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+        }
+
+        // 10. 初始化UI事件监听器
+        function initUI() {
+            // 旋转速度滑块
+            const rotationSpeedSlider = document.getElementById('rotation-speed');
+            const rotationSpeedValue = document.getElementById('rotation-speed-value');
+
+            rotationSpeedSlider.addEventListener('input', function () {
+                rotationSpeed = parseFloat(this.value);
+                rotationSpeedValue.textContent = rotationSpeed.toFixed(2);
+            });
+
+            // 立方体尺寸滑块
+            const cubeScaleSlider = document.getElementById('cube-scale');
+            const cubeScaleValue = document.getElementById('cube-scale-value');
+
+            cubeScaleSlider.addEventListener('input', function () {
+                const scale = parseFloat(this.value);
+                cube.scale.set(scale, scale, scale);
+                cubeScaleValue.textContent = scale.toFixed(1);
+            });
+
+            // 灯光强度滑块
+            const lightIntensitySlider = document.getElementById('light-intensity');
+            const lightIntensityValue = document.getElementById('light-intensity-value');
+
+            lightIntensitySlider.addEventListener('input', function () {
+                const intensity = parseFloat(this.value);
+                directionalLight.intensity = intensity;
+                pointLight.intensity = intensity;
+                lightIntensityValue.textContent = intensity.toFixed(1);
+            });
+
+            // 自动旋转复选框
+            const autoRotateCheckbox = document.getElementById('auto-rotate');
+            autoRotateCheckbox.addEventListener('change', function () {
+                autoRotate = this.checked;
+            });
+
+            // 显示网格复选框
+            const showGridCheckbox = document.getElementById('show-grid');
+            showGridCheckbox.addEventListener('change', function () {
+                gridHelper.visible = this.checked;
+            });
+
+            // 显示坐标轴复选框
+            const showAxesCheckbox = document.getElementById('show-axes');
+            showAxesCheckbox.addEventListener('change', function () {
+                axesHelper.visible = this.checked;
+            });
+
+            // 颜色按钮
+            document.getElementById('color-red').addEventListener('click', function () {
+                cube.material.color.set(0xff4757);
+            });
+
+            document.getElementById('color-blue').addEventListener('click', function () {
+                cube.material.color.set(0x00a8ff);
+            });
+
+            document.getElementById('color-green').addEventListener('click', function () {
+                cube.material.color.set(0x2ed573);
+            });
+
+            // 材质按钮
+            document.getElementById('material-standard').addEventListener('click', function () {
+                cube.material.wireframe = false;
+            });
+
+            document.getElementById('material-wireframe').addEventListener('click', function () {
+                cube.material.wireframe = true;
+            });
+
+            // 添加球体按钮
+            document.getElementById('add-sphere').addEventListener('click', function () {
+                const sphereGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+                const sphereMaterial = new THREE.MeshStandardMaterial({
+                    color: Math.random() * 0xffffff,
+                    roughness: 0.4,
+                    metalness: 0.6
+                });
+                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+                sphere.castShadow = true;
+                sphere.receiveShadow = true;
+
+                // 随机位置
+                sphere.position.set(
+                    (Math.random() - 0.5) * 8,
+                    0.5,
+                    (Math.random() - 0.5) * 8
+                );
+
+                scene.add(sphere);
+                updateObjectCount();
+            });
+
+            // 重置场景按钮
+            document.getElementById('reset-scene').addEventListener('click', function () {
+                // 移除除立方体、平面、灯光和辅助对象外的所有物体
+                const objectsToRemove = [];
+                scene.traverse(function (object) {
+                    if (object !== cube &&
+                        object !== plane &&
+                        object !== ambientLight &&
+                        object !== directionalLight &&
+                        object !== pointLight &&
+                        object !== pointLightHelper &&
+                        object !== gridHelper &&
+                        object !== axesHelper &&
+                        object !== scene) {
+                        objectsToRemove.push(object);
+                    }
+                });
+
+                objectsToRemove.forEach(object => {
+                    if (object.parent) {
+                        object.parent.remove(object);
+                    }
+                });
+
+                // 重置立方体
+                cube.scale.set(1, 1, 1);
+                cube.material.color.set(0x00a8ff);
+                cube.material.wireframe = false;
+                cube.rotation.set(0, 0, 0);
+
+                // 重置滑块和复选框
+                rotationSpeedSlider.value = 0.5;
+                rotationSpeed = 0.5;
+                rotationSpeedValue.textContent = '0.5';
+
+                cubeScaleSlider.value = 1.0;
+                cube.scale.set(1, 1, 1);
+                cubeScaleValue.textContent = '1.0';
+
+                lightIntensitySlider.value = 1.0;
+                directionalLight.intensity = 1.0;
+                pointLight.intensity = 1.0;
+                lightIntensityValue.textContent = '1.0';
+
+                autoRotateCheckbox.checked = true;
+                autoRotate = true;
+
+                showGridCheckbox.checked = true;
+                gridHelper.visible = true;
+
+                showAxesCheckbox.checked = true;
+                axesHelper.visible = true;
+
+                updateObjectCount();
+            });
+
+            // 更新物体数量显示
+            function updateObjectCount() {
+                let count = 0;
+                scene.traverse(function (object) {
+                    if (object.isMesh) {
+                        count++;
+                    }
+                });
+                document.getElementById('object-count').textContent = count;
+            }
+
+            // 初始化物体数量
+            updateObjectCount();
+        }
+
+        // 11. 双击聚焦物体
+        function initDoubleClickFocus() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            function onDoubleClick(event) {
+                // 计算鼠标位置（归一化设备坐标）
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                // 更新射线投射器
+                raycaster.setFromCamera(mouse, camera);
+
+                // 计算与射线相交的物体
+                const intersects = raycaster.intersectObjects(scene.children, true);
+
+                // 如果找到了相交的物体，聚焦到该物体
+                if (intersects.length > 0) {
+                    const object = intersects[0].object;
+
+                    // 移动相机到物体位置
+                    const focusPosition = new THREE.Vector3();
+                    object.getWorldPosition(focusPosition);
+
+                    // 动画移动到物体位置
+                    const duration = 1000; // 动画时间（毫秒）
+                    const startPosition = camera.position.clone();
+                    const startTime = Date.now();
+
+                    function animateCamera() {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+
+                        // 使用缓动函数
+                        const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+                        camera.position.lerpVectors(startPosition, focusPosition, easeProgress);
+                        controls.target.lerpVectors(controls.target, focusPosition, easeProgress);
+
+                        if (progress < 1) {
+                            requestAnimationFrame(animateCamera);
+                        }
+                    }
+
+                    animateCamera();
+                }
+            }
+
+            canvas.addEventListener('dblclick', onDoubleClick);
+        }
+
+        // 12. 初始化
+        initUI();
+        initDoubleClickFocus();
+        animate();
+
+        // 13. 初始渲染
+        renderer.render(scene, camera);
+    </script>
+</body>
+
+</html>

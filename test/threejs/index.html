@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>主页面</title>
+    <style>
+        /* 将整个页面设为不可见 */
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            visibility: hidden;
+            /* 隐藏但不占空间 */
+        }
+
+        /* 但iframe要显示出来 */
+        iframe {
+            visibility: visible;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            margin: 0;
+            padding: 0;
+            z-index: 9999;
+        }
+    </style>
+</head>
+
+<body>
+    <!--NOTE: 需要： npx serve  启动项目。因为 three.js-r182 目录不能直接访问，必须服务器的形式-->
+    <!-- iframe将占满整个视口 -->
+    <iframe id="content-frame" src="./00/index.html"></iframe>
+</body>
+
+</html>

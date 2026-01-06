@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript 动态对象成员演示</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .demo {
+            background-color: #f5f5f5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        code {
+            background-color: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>JavaScript 对象动态成员演示</h1>
+
+    <div class="demo">
+        <h2>示例 1：基础动态属性</h2>
+        <button onclick="example1()">运行示例 1</button>
+        <div id="output1"></div>
+    </div>
+
+    <div class="demo">
+        <h2>示例 2：运行时添加方法</h2>
+        <button onclick="example2()">运行示例 2</button>
+        <div id="output2"></div>
+    </div>
+
+    <div class="demo">
+        <h2>示例 3：动态删除和修改属性</h2>
+        <button onclick="example3()">运行示例 3</button>
+        <div id="output3"></div>
+    </div>
+
+    <div class="demo">
+        <h2>示例 4：ES6 特性扩展</h2>
+        <button onclick="example4()">运行示例 4</button>
+        <div id="output4"></div>
+    </div>
+
+    <script>
+        // 示例 1：基础动态属性
+        function example1() {
+            const output = document.getElementById('output1');
+            output.innerHTML = '';
+
+            // 创建空对象
+            const person = {};
+
+            // 运行时动态添加属性
+            person.name = '张三';
+            person.age = 25;
+
+            // 输出初始对象
+            output.innerHTML += `<p>初始对象: ${JSON.stringify(person)}</p>`;
+
+            // 继续添加更多属性
+            person.city = '北京';
+            person.job = '工程师';
+
+            output.innerHTML += `<p>添加属性后: ${JSON.stringify(person)}</p>`;
+
+            // 使用动态属性名
+            const dynamicKey = 'hobby';
+            person[dynamicKey] = '编程';
+            person['salary' + 'Level'] = 'A'; // 动态计算属性名
+
+            output.innerHTML += `<p>使用动态属性名: ${JSON.stringify(person)}</p>`;
+        }
+
+        // 示例 2：运行时添加方法
+        function example2() {
+            const output = document.getElementById('output2');
+            output.innerHTML = '';
+
+            const car = {
+                brand: 'Toyota',
+                year: 2020
+            };
+
+            output.innerHTML += `<p>原始对象: ${JSON.stringify(car)}</p>`;
+
+            // 运行时添加方法
+            car.start = function () {
+                return `${this.brand} 启动了！`;
+            };
+
+            car.getAge = function () {
+                const currentYear = new Date().getFullYear();
+                return currentYear - this.year;
+            };
+
+            output.innerHTML += `<p>添加方法后调用 car.start(): ${car.start()}</p>`;
+            output.innerHTML += `<p>车龄: ${car.getAge()} 年</p>`;
+
+            // 查看对象的所有属性和方法
+            output.innerHTML += `<p>对象所有成员: ${Object.keys(car).join(', ')}</p>`;
+        }
+
+        // 示例 3：动态删除和修改属性
+        function example3() {
+            const output = document.getElementById('output3');
+            output.innerHTML = '';
+
+            const product = {
+                id: 1,
+                name: '手机',
+                price: 2999,
+                stock: 100
+            };
+
+            output.innerHTML += `<p>初始产品: ${JSON.stringify(product)}</p>`;
+
+            // 修改属性
+            product.price = 2599;
+            output.innerHTML += `<p>修改价格后: ${JSON.stringify(product)}</p>`;
+
+            // 删除属性
+            delete product.stock;
+            output.innerHTML += `<p>删除库存属性后: ${JSON.stringify(product)}</p>`;
+
+            // 检查属性是否存在
+            output.innerHTML += `<p>是否存在 price 属性: ${'price' in product}</p>`;
+            output.innerHTML += `<p>是否存在 stock 属性: ${'stock' in product}</p>`;
+
+            // 动态添加计算属性
+            product.getPriceWithTax = function (taxRate = 0.13) {
+                return this.price * (1 + taxRate);
+            };
+
+            output.innerHTML += `<p>含税价格 (13%): ¥${product.getPriceWithTax().toFixed(2)}</p>`;
+        }
+
+        // 示例 4：ES6 特性扩展
+        function example4() {
+            const output = document.getElementById('output4');
+            output.innerHTML = '';
+
+            // 使用 ES6 计算属性名
+            const prefix = 'user_';
+            const userId = 12345;
+
+            const user = {
+                [prefix + 'id']: userId,  // 计算属性名
+                [prefix + 'name']: '李四',
+                [`${prefix}role`]: 'admin'  // 模板字符串作为属性名
+            };
+
+            output.innerHTML += `<p>使用计算属性名: ${JSON.stringify(user)}</p>`;
+
+            // Object.defineProperty 动态添加属性
+            Object.defineProperty(user, 'createdAt', {
+                value: new Date().toISOString(),
+                writable: false,  // 不可写
+                enumerable: true,  // 可枚举
+                configurable: true // 可配置
+            });
+
+            output.innerHTML += `<p>使用 defineProperty 添加: ${JSON.stringify(user)}</p>`;
+
+            // 尝试修改只读属性
+            user.createdAt = '2024-01-01';
+            output.innerHTML += `<p>尝试修改只读属性后: ${JSON.stringify(user)} (未改变)</p>`;
+
+            // 动态添加 getter/setter
+            const account = {
+                _balance: 1000
+            };
+
+            Object.defineProperty(account, 'balance', {
+                get() {
+                    return this._balance;
+                },
+                set(value) {
+                    if (value < 0) {
+                        console.log('余额不能为负');
+                        return;
+                    }
+                    this._balance = value;
+                },
+                enumerable: true
+            });
+
+            output.innerHTML += `<p>初始余额: ${account.balance}</p>`;
+            account.balance = 1500;
+            output.innerHTML += `<p>设置余额为1500后: ${account.balance}</p>`;
+            account.balance = -500;
+            output.innerHTML += `<p>尝试设置负值后: ${account.balance} (保持不变)</p>`;
+        }
+    </script>
+</body>
+
+</html>

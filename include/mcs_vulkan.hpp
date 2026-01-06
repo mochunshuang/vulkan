@@ -37,3 +37,6 @@
 
 // wsi
 #include "detail/wsi/glfw.hpp"
+
+// conn
+#include "detail/conn/connect_object.hpp"

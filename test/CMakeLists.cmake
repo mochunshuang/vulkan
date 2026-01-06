@@ -93,3 +93,16 @@ auto_compile_vert_shaders(compile_all_framework_vert
 auto_compile_frag_shaders(compile_all_framework_frag
     ${CMAKE_SOURCE_DIR}/test/framework/shaders
     ${TEST_EXECUTABLE_OUTPUT_PATH}/framework/shaders)
+
+# no_add_test
+include(${CMAKE_SOURCE_DIR}/test/no_add_test/no_add_test.cmake)
+
+# -------------shadertoy-----------------------
+set(DIR_NAME "shadertoy")
+auto_add_framework(${DIR_NAME})
+auto_compile_vert_shaders_with_prefix("compile_all_${DIR_NAME}_vert"
+    ${CMAKE_SOURCE_DIR}/test/${DIR_NAME}/shaders
+    ${TEST_EXECUTABLE_OUTPUT_PATH}/${DIR_NAME}/shaders ${DIR_NAME})
+auto_compile_frag_shaders_with_prefix("compile_all_${DIR_NAME}_frag"
+    ${CMAKE_SOURCE_DIR}/test/${DIR_NAME}/shaders
+    ${TEST_EXECUTABLE_OUTPUT_PATH}/${DIR_NAME}/shaders ${DIR_NAME})

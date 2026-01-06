@@ -216,7 +216,9 @@ struct my_shadertoy_pipeline
         }
     }
 };
+
 // NOLINTBEGIN
+
 static constexpr my_shadertoy_pipeline createShadertoyPipeline(
     context_base &ctx, descriptor_resource &descriptor_resource, VkFormat colorFormat,
     VkFormat depthFormat, VkSampleCountFlagBits msaaSamples)
@@ -226,7 +228,7 @@ static constexpr my_shadertoy_pipeline createShadertoyPipeline(
 
     // 加载Shadertoy着色器（需要预先编译为SPIR-V）
     // NOTE: 只需要修改 frag_file 。 顶点的就算了
-    constexpr auto frag_file = "shaders/drop_shadow_frag.spv";
+    constexpr auto frag_file = "shaders/shadertoy_frag.spv";
 
     constexpr auto vert_file = "shaders/shadertoy_vert.spv";
     shader_module vert = shader_module(device, vert_file);
@@ -486,12 +488,6 @@ struct shadertoy_mesh_data
             {{1.0f, 1.0f}, {1.0f, 1.0f}},   // 右上
             {{-1.0f, 1.0f}, {0.0f, 1.0f}}   // 左上
         };
-        // vertices = {
-        //     {{-0.5f, -0.5f}, {0.0f, 0.0f}}, // 左下
-        //     {{0.5f, -0.5f}, {1.0f, 0.0f}},  // 右下
-        //     {{0.5f, 0.5f}, {1.0f, 1.0f}},   // 右上
-        //     {{-0.5f, 0.5f}, {0.0f, 1.0f}}   // 左上
-        // };
 
         indices = {0, 1, 2, 2, 3, 0};
 
@@ -957,6 +953,8 @@ struct even_reciver
 };
 // NOLINTEND
 
+constexpr auto WIN_TITLE = "test_input_Keyboard";
+
 int main()
 {
     try
@@ -977,7 +975,7 @@ int main()
 
         // 创建窗口
         surface window{};
-        window.setup({.width = 800, .height = 600}, "Shadertoy Renderer"); // NOLINT
+        window.setup({.width = 800, .height = 600}, WIN_TITLE); // NOLINT
 
         // 创建Vulkan上下文
         mcs::vulkan::context_base ctx;
