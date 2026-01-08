@@ -258,13 +258,10 @@ namespace mcs::vulkan::wsi::glfw
                 break;
 
             default:
-
-                MCSLOG_DEBUG("按下了键: {} (扫描码: {})  修饰键: {}", key, scancode,
-                             mods);
                 event::distribute<event::keyboard_event_dispatcher>(
                     {.key = input::mappingKey(key),
                      .action = input::mappingAction(action),
-                     .modifier_key = input::mappingModifierKey(mods),
+                     .modifier_key = event::ModifierKey(mods),
                      .scancode = scancode});
                 break;
             }
@@ -277,38 +274,26 @@ namespace mcs::vulkan::wsi::glfw
             // 使用新的映射函数
             event::MouseButtons mappedButton = input::mappingMouseButton(button);
             event::Action mappedAction = input::mappingAction(action);
-            event::ModifierKey mappedMods = input::mappingModifierKey(mods);
-
-            const char *actionName = mappedAction == event::Action::PRESS     ? "按下"
-                                     : mappedAction == event::Action::RELEASE ? "释放"
-                                                                              : "重复";
-
-            MCSLOG_DEBUG("鼠标按钮: {} 动作: {} 修饰键: {}",
-                         static_cast<int>(mappedButton), actionName,
-                         mappedMods.raw_data());
+            event::ModifierKey mappedMods = event::ModifierKey(mods);
 
             event::distribute<event::mousebutton_event_dispatcher>(
                 {.button = input::mappingMouseButton(button),
                  .action = input::mappingAction(action),
-                 .modifier_key = input::mappingModifierKey(mods)});
+                 .modifier_key = event::ModifierKey(mods)});
         }
         static void scrollCallback(GLFWwindow *window, double xoffset, double yoffset)
         {
-            MCSLOG_INFO("scroll: ({}, {})", xoffset, yoffset);
-
             event::distribute<event::scroll_event_dispatcher>(
                 {.xoffset = xoffset, .yoffset = yoffset});
         }
         static void cursorPosCallback(GLFWwindow * /*window*/, double xpos, double ypos)
         {
-            MCSLOG_INFO("cursorPos: ({}, {})", xpos, ypos);
             event::distribute<event::cursor_pos_event_dispatcher>(
                 {.xpos = xpos, .ypos = ypos});
         }
 
         static void cursorEnterCallback(GLFWwindow *window, int entered)
         {
-            MCSLOG_INFO("cursorEnter: {}.", entered != 0 ? "enter" : "leave");
             event::distribute<event::cursor_enter_event_dispatcher>(
                 {.value = entered != 0});
         }

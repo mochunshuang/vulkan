@@ -936,14 +936,14 @@ static std::map<uint64_t, std::function<void(mousebutton_event)>> mousebutton_fn
 static std::map<uint64_t, std::function<void(position2d_event)>> cursorPos_fn;
 struct even_reciver
 {
-    static void mousebutton_event(mousebutton_event mouse) noexcept
+    static void mousebutton_event(void *, mousebutton_event mouse) noexcept
     {
         for (auto &[id, fn] : mousebutton_fn)
         {
             std::invoke(fn, mouse);
         }
     }
-    static void cursorPos_event(position2d_event mouse) noexcept
+    static void cursorPos_event(void *, position2d_event mouse) noexcept
     {
         for (auto &[id, fn] : cursorPos_fn)
         {
@@ -1265,8 +1265,9 @@ int main()
 
         // 设置事件回调
         mousebutton_event_dispatcher::instance().subscribe(
-            &even_reciver::mousebutton_event);
-        cursor_pos_event_dispatcher::instance().subscribe(&even_reciver::cursorPos_event);
+            nullptr, &even_reciver::mousebutton_event);
+        cursor_pos_event_dispatcher::instance().subscribe(nullptr,
+                                                          &even_reciver::cursorPos_event);
 
         auto mouseButtonCallback = [&](mousebutton_event event) {
             bool pressed = (event.action == mcs::vulkan::event::Action::PRESS);

@@ -40,3 +40,9 @@
 
 // conn
 #include "detail/conn/connect_object.hpp"
+
+// input
+#include "detail/input/glfw_input.hpp"
+
+// camera
+#include "detail/camera/camera_controller.hpp"

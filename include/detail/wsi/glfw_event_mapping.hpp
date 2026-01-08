@@ -11,24 +11,25 @@ namespace mcs::vulkan::wsi::glfw
 {
     namespace input
     {
-        static constexpr auto mappingModifierKey(int mod) noexcept // NOLINT
-        {
-            switch (mod)
-            {
-            case GLFW_MOD_SHIFT:
-                return event::ModifierKey(event::ModifierKey::SHIFT);
-            case GLFW_MOD_CONTROL:
-                return event::ModifierKey(event::ModifierKey::CONTROL);
-            case GLFW_MOD_ALT:
-                return event::ModifierKey(event::ModifierKey::ALT);
-            case GLFW_MOD_CAPS_LOCK:
-                return event::ModifierKey(event::ModifierKey::CAPS_LOCK);
-            case GLFW_MOD_NUM_LOCK:
-                return event::ModifierKey(event::ModifierKey::NUM_LOCK);
-            default:
-                return event::ModifierKey::None();
-            }
-        }
+        // NOTE: bug 的来源。控制键是可以组合的
+        //  static constexpr auto mappingModifierKey(int mod) noexcept // NOLINT
+        //  {
+        //      switch (mod)
+        //      {
+        //      case GLFW_MOD_SHIFT:
+        //          return event::ModifierKey(event::ModifierKey::SHIFT);
+        //      case GLFW_MOD_CONTROL:
+        //          return event::ModifierKey(event::ModifierKey::CONTROL);
+        //      case GLFW_MOD_ALT:
+        //          return event::ModifierKey(event::ModifierKey::ALT);
+        //      case GLFW_MOD_CAPS_LOCK:
+        //          return event::ModifierKey(event::ModifierKey::CAPS_LOCK);
+        //      case GLFW_MOD_NUM_LOCK:
+        //          return event::ModifierKey(event::ModifierKey::NUM_LOCK);
+        //      default:
+        //          return event::ModifierKey::None();
+        //      }
+        //  }
 
         // NOLINTNEXTLINE
         static constexpr event::MouseButtons mappingMouseButton(int button) noexcept
