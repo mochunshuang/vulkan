@@ -101,6 +101,22 @@ namespace mcs::vulkan
             return VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         else if constexpr (std::is_same_v<T, VkWriteDescriptorSet>)
             return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        else if constexpr (std::is_same_v<T, VkImageMemoryBarrier2>)
+            return VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+        else if constexpr (std::is_same_v<T, VkDependencyInfo>)
+            return VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        else if constexpr (std::is_same_v<T, VkSemaphoreSubmitInfo>)
+            return VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        else if constexpr (std::is_same_v<T, VkCommandBufferSubmitInfo>)
+            return VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        else if constexpr (std::is_same_v<T, VkSubmitInfo2>)
+            return VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        else if constexpr (std::is_same_v<T, VkSemaphoreTypeCreateInfo>)
+            return VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+        else if constexpr (std::is_same_v<T, VkSemaphoreWaitInfo>)
+            return VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+        else if constexpr (std::is_same_v<T, VkPhysicalDeviceVulkan12Features>)
+            return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
         else
             // static_assert(false, "Unknown Vulkan structure type");
             std::terminate();

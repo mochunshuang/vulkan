@@ -205,6 +205,13 @@ namespace mcs::vulkan
                 throw utils::make_vk_exception("failed to bind buffer memory!");
             return commandBuffer;
         }
+        void allocateCommandBuffers(VkCommandBuffer &commandBuffer,
+                                    const VkCommandBufferAllocateInfo &allocInfo) const
+        {
+            if (::vkAllocateCommandBuffers(device_, &allocInfo, &commandBuffer) !=
+                VK_SUCCESS)
+                throw utils::make_vk_exception("failed to bind buffer memory!");
+        }
         void freeCommandBuffers(VkCommandPool commandPool, uint32_t commandBufferCount,
                                 const VkCommandBuffer &commandBuffers) const noexcept
         {
