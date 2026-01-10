@@ -117,6 +117,12 @@ namespace mcs::vulkan
             return VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
         else if constexpr (std::is_same_v<T, VkPhysicalDeviceVulkan12Features>)
             return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        else if constexpr (std::is_same_v<
+                               T, VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>)
+            return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
+        else if constexpr (std::is_same_v<
+                               T, VkPhysicalDeviceExtendedDynamicState3FeaturesEXT>)
+            return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT;
         else
             // static_assert(false, "Unknown Vulkan structure type");
             std::terminate();
