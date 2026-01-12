@@ -49,31 +49,37 @@ namespace mcs::vulkan::input
         static void onKeyboardEvent(void *self, keyboard_event key) noexcept
         {
             // std::println("key: {}", key);
-            // NOLINTNEXTLINE
-            static_cast<glfw_input *>(self)->keyboards_[static_cast<uint8_t>(key.key)] =
-                key;
+            auto *impl = static_cast<glfw_input *>(self);
+            impl->acceptNewEvent_ = true;
+            impl->keyboards_[static_cast<uint8_t>(key.key)] = std::move(key); // NOLINT
         }
         static void onMouseButtonEvent(void *self, mousebutton_event mouse) noexcept
         {
-            std::println("mouse: {}", mouse);
-            // NOLINTNEXTLINE
-            static_cast<glfw_input *>(self)
-                ->mousebuttons_[static_cast<uint8_t>(mouse.button)] = mouse;
+            // std::println("mouse: {}", mouse);
+            auto *impl = static_cast<glfw_input *>(self);
+            impl->acceptNewEvent_ = true; // NOLINTNEXTLINE
+            impl->mousebuttons_[static_cast<uint8_t>(mouse.button)] = std::move(mouse);
         }
         static void onScrollEvent(void *self, scroll_event scroll) noexcept
         {
             // std::println("scroll: {}", scroll);
-            static_cast<glfw_input *>(self)->scroll_ = std::move(scroll); // NOLINT
+            auto *impl = static_cast<glfw_input *>(self);
+            impl->acceptNewEvent_ = true;
+            impl->scroll_ = std::move(scroll); // NOLINT
         }
         static void onCursorPosEvent(void *self, position2d_event pos) noexcept
         {
             // std::println("cursorPos: {}", pos);
-            static_cast<glfw_input *>(self)->cursorPos_ = std::move(pos); // NOLINT
+            auto *impl = static_cast<glfw_input *>(self);
+            impl->acceptNewEvent_ = true;
+            impl->cursorPos_ = std::move(pos); // NOLINT
         }
         static void onCursorEnter(void *self, cursor_enter_event enter) noexcept
         {
+            auto *impl = static_cast<glfw_input *>(self);
+            impl->acceptNewEvent_ = true;
             std::println("cursorEnter: {}", enter);
-            static_cast<glfw_input *>(self)->cursorEnter_ = std::move(enter); // NOLINT
+            impl->cursorEnter_ = std::move(enter); // NOLINT
         }
 
         [[nodiscard]] const auto &keyboards() const noexcept
@@ -82,6 +88,10 @@ namespace mcs::vulkan::input
         }
 
         [[nodiscard]] const scroll_event &scroll() const noexcept
+        {
+            return scroll_;
+        }
+        [[nodiscard]] scroll_event &scroll() noexcept
         {
             return scroll_;
         }
@@ -96,6 +106,10 @@ namespace mcs::vulkan::input
         }
 
         // NOLINTBEGIN
+        const bool &acceptNewEvent() const noexcept
+        {
+            return acceptNewEvent_;
+        }
         constexpr void resetKeyboards() noexcept
         {
             keyboards_ = {};
@@ -103,6 +117,11 @@ namespace mcs::vulkan::input
         constexpr void resetMousebuttons() noexcept
         {
             mousebuttons_ = {};
+        }
+        constexpr void reset() noexcept
+        {
+            scroll_ = {};
+            acceptNewEvent_ = false;
         }
 
         [[nodiscard]] const auto &get_keyboard_event(const event::Key &key) const noexcept
@@ -123,10 +142,10 @@ namespace mcs::vulkan::input
         {
             return mousebuttons_[static_cast<mousebutton_event::key_store_type>(btn)];
         }
-
         // NOLINTEND
 
       private:
+        bool acceptNewEvent_{};
         std::array<keyboard_event, static_cast<uint8_t>(event::Key::SIZE)> keyboards_;
         std::array<mousebutton_event, static_cast<uint8_t>(event::MouseButtons::SIZE)>
             mousebuttons_;

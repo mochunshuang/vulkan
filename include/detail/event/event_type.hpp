@@ -424,6 +424,8 @@ namespace mcs::vulkan::event
         {
             return status == modifier_key;
         }
+        friend constexpr bool operator==(const keyboard_event &a,
+                                         const keyboard_event &b) noexcept = default;
     };
 
     struct mousebutton_event
@@ -452,23 +454,31 @@ namespace mcs::vulkan::event
         {
             return status == modifier_key;
         }
+        friend constexpr bool operator==(const mousebutton_event &a,
+                                         const mousebutton_event &b) noexcept = default;
     };
 
     struct scroll_event
     {
         double xoffset{UNDEFINED_double};
         double yoffset{UNDEFINED_double};
+        friend constexpr bool operator==(const scroll_event &a,
+                                         const scroll_event &b) noexcept = default;
     };
 
     struct position2d_event
     {
         double xpos{UNDEFINED_double};
         double ypos{UNDEFINED_double};
+        friend constexpr bool operator==(const position2d_event &a,
+                                         const position2d_event &b) noexcept = default;
     };
 
     struct cursor_enter_event
     {
         bool value{};
+        friend constexpr bool operator==(const cursor_enter_event &a,
+                                         const cursor_enter_event &b) noexcept = default;
     };
 
 }; // namespace mcs::vulkan::event

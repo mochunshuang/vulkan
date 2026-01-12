@@ -250,12 +250,9 @@ namespace mcs::vulkan::camera
         {
             const auto &scroll = input.scroll();
 
-            if (scroll.yoffset != 0.0)
-            {
-                state_.fov -= static_cast<float>(scroll.yoffset);
-                state_.fov = glm::clamp(state_.fov, 1.0f, 120.0f);
-                state_.updated = true;
-            }
+            state_.fov -= static_cast<float>(scroll.yoffset);
+            state_.fov = glm::clamp(state_.fov, 1.0f, 120.0f);
+            state_.updated = true;
         }
 
         void handle_orbit_rotation(const auto &input, float delta_time)

@@ -58,6 +58,17 @@ namespace mcs::vulkan
             return device_ != nullptr && buffer_ != nullptr && bufferMemory_ != nullptr;
         }
 
+        [[nodiscard]] auto *map(size_t size) const
+        {
+            void *data; // NOLINT
+            device_->mapMempry(bufferMemory_, 0, size, 0, &data);
+            return data;
+        }
+        void unmap() const noexcept
+        {
+            device_->unmapMemory(bufferMemory_);
+        }
+
       private:
         const logical_device *device_{};
         VkBuffer buffer_{};

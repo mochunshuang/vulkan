@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <iostream>
 #include <chrono>
+#include <print>
 #include <thread>
 #include <tuple>
 #include <utility>
@@ -15,6 +16,50 @@ using MouseButtons = mcs::vulkan::event::MouseButtons;
 using Action = mcs::vulkan::event::Action;
 
 // NOLINTBEGIN
+struct status_mousebutton
+{
+    using mousebutton_event = mcs::vulkan::event::mousebutton_event;
+    // 赋值操作符
+    status_mousebutton &operator=(const mousebutton_event &evt) noexcept
+    {
+        if (evt == mousebutton_event{})
+            return *this;
+        value_ = evt;
+        std::cout << "value_: " << value_ << '\n';
+        return *this;
+    }
+    [[nodiscard]] bool press() const noexcept
+    {
+        return value_.press();
+    }
+    [[nodiscard]] bool release() const noexcept
+    {
+        return value_.release();
+    }
+    [[nodiscard]] bool repeat() const noexcept
+    {
+        return value_.repeat();
+    }
+    [[nodiscard]] bool isModifier(ModifierKey status) const noexcept
+    {
+        return value_.isModifier(status);
+    }
+    friend constexpr bool operator==(const status_mousebutton &a,
+                                     const status_mousebutton &b) noexcept = default;
+
+    friend constexpr bool operator==(const status_mousebutton a,
+                                     const mousebutton_event &b) noexcept
+    {
+        return a.value_ == b;
+    }
+    friend constexpr bool operator==(const mousebutton_event &a,
+                                     const status_mousebutton &b) noexcept
+    {
+        return b == a;
+    }
+
+    mousebutton_event value_;
+};
 
 template <typename F>
 struct event_filter
@@ -23,37 +68,35 @@ struct event_filter
 
     bool pass{false};
     F fn;
-
-    // 使用完美转发构造 - 添加推导指南
+    event_filter() = delete;
     template <typename Func>
         requires std::is_invocable_r_v<bool, Func, const glfw_input &>
     constexpr explicit event_filter(Func &&func) noexcept : fn(std::forward<Func>(func))
     {
     }
-
-    constexpr void filter(const glfw_input &input) noexcept
+    constexpr bool filter(const glfw_input &input) noexcept
     {
         static_assert(noexcept(fn(input)), "filter function must be noexcept");
-        pass = fn(input);
+        if (not pass)
+            pass = fn(input);
+        return pass;
     }
-
-    // 调用运算符重载，方便使用
-    constexpr void operator()(const glfw_input &input) noexcept
+    constexpr bool operator()(const glfw_input &input) noexcept
     {
-        filter(input);
+        return filter(input);
     }
 };
-
-// 添加推导指南
 template <typename Func>
 event_filter(Func) -> event_filter<Func>;
 
 template <size_t availd_interval_ms, typename... Events>
+    requires(sizeof...(Events) > 0)
 struct event_window
 {
   public:
     using time_point = std::chrono::time_point<std::chrono::steady_clock>;
     using duration = std::chrono::milliseconds;
+    static constexpr auto INVALID = (time_point::max)();
 
     static constexpr size_t SIZE = sizeof...(Events);
 
@@ -73,31 +116,12 @@ struct event_window
     {
     }
 
-    // 默认构造函数
-    constexpr event_window()
-        : start_{std::chrono::steady_clock::now()}, status_{status::no_pass}
+    auto filter(const glfw_input &input, time_point cur)
     {
-    }
-
-    void update(const glfw_input &input, time_point cur)
-    {
-        if (status_ == status::pass_but_no_consume)
-            return;
-
-        // 检查是否超时
-        if (cur - start_ >= duration(availd_interval_ms))
+        // NOTE: 必须第一个状态走完开始计时
+        std::get<0>(filter_event)(input);
+        if (start_ == INVALID)
         {
-            start_ = cur;
-            reset_by_timeout();
-        }
-
-        // 更新所有过滤器
-        update_impl(input, std::index_sequence_for<Events...>{});
-
-        // 检查是否所有过滤器都通过
-        if (all_pass())
-        {
-            status_ = status::pass;
         }
     }
 
@@ -205,7 +229,7 @@ struct event_window
     }
 
     std::tuple<Events...> filter_event{};
-    time_point start_;
+    time_point start_{};
     status status_{status::no_pass};
 };
 
@@ -218,6 +242,12 @@ auto make_event_window(Filters &&...filters)
 
 int main()
 {
+    {
+        using time_point = std::chrono::time_point<std::chrono::steady_clock>;
+
+        status_mousebutton mbn;
+        mbn = mcs::vulkan::event::mousebutton_event{}; // OK 语法支持
+    }
     try
     {
         surface window{};
@@ -226,29 +256,34 @@ int main()
         glfw_input input;
 
         // 创建事件过滤器 - 修复返回类型问题
-        auto ctrl_filter = event_filter([](const glfw_input &input) noexcept -> bool {
+        auto ctrl_filter = [](const glfw_input &input) noexcept -> bool {
             // 检查左Ctrl或右Ctrl是否按下
             const auto &left_ctrl = input.get_keyboard_event(Key::LEFT_CONTROL);
             const auto &right_ctrl = input.get_keyboard_event(Key::RIGHT_CONTROL);
-            return left_ctrl.press() || right_ctrl.press();
-        });
+            return left_ctrl.press() || left_ctrl.repeat() || right_ctrl.press() ||
+                   right_ctrl.repeat();
+        };
 
+        // NOTE: event_filter 是不需要的
         auto s_filter = event_filter([](const glfw_input &input) noexcept -> bool {
             const auto &s_key = input.get_keyboard_event(Key::S);
-            return s_key.press() || s_key.repeat();
+            return s_key.press();
         });
 
-        auto mouse_filter = event_filter([](const glfw_input &input) noexcept -> bool {
+        auto mouse_filter = [](const glfw_input &input) noexcept -> bool {
             const auto &mouse_left =
                 input.get_mousebutton_event(MouseButtons::MOUSE_BUTTON_LEFT);
             return mouse_left.press();
-        });
+        };
 
         // 创建事件窗口：500毫秒内需要同时满足Ctrl+S+鼠标左键
-        auto combo_window =
-            event_window<1000, decltype(ctrl_filter), decltype(s_filter),
-                         decltype(mouse_filter)>(ctrl_filter, s_filter, mouse_filter);
-        auto ctrl_mouse = make_event_window<1000>(ctrl_filter, mouse_filter);
+        status_mousebutton my_btn{};
+        auto my_mouse_filter = [&](const glfw_input &input) noexcept -> bool {
+            const auto &mouse_left =
+                input.get_mousebutton_event(MouseButtons::MOUSE_BUTTON_LEFT);
+            my_btn = mouse_left;
+            return my_btn.press() || my_btn.repeat();
+        };
 
         using std::chrono::milliseconds;
         using std::chrono::steady_clock;
@@ -260,51 +295,51 @@ int main()
         int frameCount = 0;
         double fps = 0.0;
 
-        // NOTE: 鼠标当前不支持长按
         while (window.shouldClose() == 0)
         {
             frameCount++;
 
-            input.resetKeyboards();
-            input.resetMousebuttons();
+            // input.reset();
             surface::pollEvents();
 
-            // 更新组合事件检测
-            combo_window.update(input);
-
-            if (combo_window.is_pass())
-            {
-                std::cout << ">>>>>>>>>>>>>>>>>>. Combo detected! Ctrl + S + Mouse Left"
-                          << '\n';
-                combo_window.consume(); // 消费事件
-            }
-
             // 原有的单键检测
-            const auto &key_b_event = input.get_keyboard_event(Key::B);
-            if (key_b_event.press() && key_b_event.isModifier(ModifierKey::CtrlAlt()))
+            // NOTE:得更新
+            // if (my_mouse_filter(input))
+            // {
+            //     std::cout << "my_btn.press() || my_btn.repeat()" << '\n';
+            // }
+            // const auto &s_key = input.get_keyboard_event(Key::S);
+            // if (s_key.press() || s_key.repeat())
+            // {
+            //     std::cout << "s_key.press() || s_key.repeat()" << '\n';
+            // }
+            const auto &b_key = input.get_keyboard_event(Key::B);
+            if ((b_key.press() || b_key.repeat()))
             {
-                std::cout << ">>>>>>>>>>>>>>>>>>. ctrl + alt + b\n";
+                std::cout << " b" << '\n';
             }
-            if (key_b_event.release())
+            if (mouse_filter(input))
             {
-                std::cout << ">>>>>>>>>>>>>>>>>>. release  b\n";
+                std::cout << "mouse_left" << '\n';
             }
+            if (ctrl_filter(input))
+            {
+                std::cout << "ctrl" << '\n';
+                if ((b_key.press() || b_key.repeat()))
+                {
+                    std::cout << "ctrl + b" << '\n';
+                    if (mouse_filter(input))
+                    {
+                        std::cout << "ctrl + b + mouse_left" << '\n';
+                    }
+                }
+            }
+            // NOTE: 不去掉状态才是对的
 
             if (window.framebufferResized())
             {
                 std::cout << ">>>>>>>>>>>>>>>>>>. Framebuffer resized!" << '\n';
                 window.refFramebufferResized() = false;
-            }
-            ctrl_mouse.update(input);
-            if (ctrl_mouse.is_pass()) // NOTE: BUG. 因为不存在长按，只会一次
-            {
-                std::cout << "========= Combo detected! Ctrl +  Mouse Left" << '\n';
-                ctrl_mouse.consume(); // 消费事件
-            }
-            s_filter.filter(input);
-            if (s_filter.pass)
-            {
-                std::cout << "========= s_filter.pass" << '\n';
             }
 
             // 帧率限制

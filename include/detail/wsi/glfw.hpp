@@ -272,10 +272,6 @@ namespace mcs::vulkan::wsi::glfw
                                         int mods)
         {
             // 使用新的映射函数
-            event::MouseButtons mappedButton = input::mappingMouseButton(button);
-            event::Action mappedAction = input::mappingAction(action);
-            event::ModifierKey mappedMods = event::ModifierKey(mods);
-
             event::distribute<event::mousebutton_event_dispatcher>(
                 {.button = input::mappingMouseButton(button),
                  .action = input::mappingAction(action),
