@@ -20,3 +20,6 @@
 [submodule "third_party/volk"]
 	path = third_party/volk
 	url = https://gh-proxy.org/https://github.com/zeux/volk
+[submodule "third_party/vma"]
+	path = third_party/vma
+	url = https://gh-proxy.org/https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
