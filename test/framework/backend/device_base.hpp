@@ -71,6 +71,7 @@ namespace mcs::vulkan::core
         PFN_vkGetBufferDeviceAddress getBufferDeviceAddress_{};
         PFN_vkCmdBindIndexBuffer cmdBindIndexBuffer_{};
         PFN_vkCmdDrawIndexed cmdDrawIndexed_{};
+        PFN_vkCmdPushConstants cmdPushConstants_{};
         // NOLINTEND
         device_base() = default;
         constexpr explicit device_base(value_type value) noexcept
@@ -142,7 +143,8 @@ namespace mcs::vulkan::core
                   funPtr<PFN_vkGetBufferDeviceAddress>("vkGetBufferDeviceAddress")},
               cmdBindIndexBuffer_{
                   funPtr<PFN_vkCmdBindIndexBuffer>("vkCmdBindIndexBuffer")},
-              cmdDrawIndexed_{funPtr<PFN_vkCmdDrawIndexed>("vkCmdDrawIndexed")}
+              cmdDrawIndexed_{funPtr<PFN_vkCmdDrawIndexed>("vkCmdDrawIndexed")},
+              cmdPushConstants_{funPtr<PFN_vkCmdPushConstants>("vkCmdPushConstants")}
         {
             MCSLOG_INFO("load VkDevice pfn [begin]");
             MCS_ASSERT(getDeviceQueue_ != nullptr);

@@ -249,6 +249,13 @@ namespace mcs::vulkan::core
                                                   firstIndex, vertexOffset,
                                                   firstInstance);
         }
+        void pushConstants(VkPipelineLayout layout, VkShaderStageFlagBits stageFlags,
+                           uint32_t offset, uint32_t size,
+                           const void *pValues) const noexcept
+        {
+            pool_->logicalDevice_->cmdPushConstants(value_, layout, stageFlags, offset,
+                                                    size, pValues);
+        }
     };
 
     constexpr std::vector<CommandBuffer> CommandPool::allocateCommandBuffers(

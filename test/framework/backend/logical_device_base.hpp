@@ -403,14 +403,23 @@ namespace mcs::vulkan::core
                                           VkDeviceSize offset,
                                           VkIndexType indexType) const noexcept
         {
+            MCS_ASSERT(cmdBindIndexBuffer_ != nullptr);
             cmdBindIndexBuffer_(commandBuffer, buffer, offset, indexType);
         }
         void cmdDrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount,
                             uint32_t instanceCount, uint32_t firstIndex,
                             int32_t vertexOffset, uint32_t firstInstance) const noexcept
         {
+            MCS_ASSERT(cmdDrawIndexed_ != nullptr);
             cmdDrawIndexed_(commandBuffer, indexCount, instanceCount, firstIndex,
                             vertexOffset, firstInstance);
+        }
+        void cmdPushConstants(VkCommandBuffer commandBuffer, VkPipelineLayout layout,
+                              VkShaderStageFlags stageFlags, uint32_t offset,
+                              uint32_t size, const void *pValues) const noexcept
+        {
+            MCS_ASSERT(cmdPushConstants_ != nullptr);
+            cmdPushConstants_(commandBuffer, layout, stageFlags, offset, size, pValues);
         }
     };
 
