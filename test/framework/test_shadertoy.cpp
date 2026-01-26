@@ -524,7 +524,7 @@ struct shadertoy_mesh_data
                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)};
 
-        stagingBuffer.mapAndUnmapMempry(data, static_cast<size_t>(BUFFER_SIZE));
+        stagingBuffer.mapAndUnmapMemory(data, static_cast<size_t>(BUFFER_SIZE));
 
         mcs::vulkan::copy_buffer(device, queue, commandPool, stagingBuffer.buffer(),
                                  buffer.buffer(), BUFFER_SIZE);

@@ -115,7 +115,10 @@ namespace mcs::vulkan
     };
 
     template <typename... T>
-        requires(sizeof...(T) > 0 && (requires(T &t) { t.pNext = nullptr; } && ...))
+        requires(sizeof...(T) > 0 && (requires(T &t) {
+                     t.pNext = nullptr;
+                     sType<T>();
+                 } && ...))
     struct structure_chain : product_type_base<::std::index_sequence_for<T...>, T...>
     {
         using product_type_base<::std::index_sequence_for<T...>, T...>::product_type_base;

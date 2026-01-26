@@ -155,7 +155,7 @@ namespace mcs::vulkan
                 throw utils::make_vk_exception("failed to bind image memory!");
         }
 
-        void mapMempry(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
+        void mapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
                        VkMemoryMapFlags flags, void **pdata) const
         {
             if (::vkMapMemory(device_, memory, offset, size, flags, pdata) != VK_SUCCESS)
@@ -343,6 +343,17 @@ namespace mcs::vulkan
         {
             ::vkUpdateDescriptorSets(device_, descriptorWriteCount, descriptorWrites,
                                      descriptorCopyCount, descriptorCopies);
+        }
+        void destroyFence(VkFence fence, const VkAllocationCallbacks *pAllocator =
+                                             nullptr) const noexcept
+        {
+            ::vkDestroyFence(device_, fence, pAllocator);
+        }
+        void destroySemaphore(
+            VkSemaphore semaphore,
+            const VkAllocationCallbacks *pAllocator = nullptr) const noexcept
+        {
+            vkDestroySemaphore(device_, semaphore, pAllocator);
         }
 
       private:

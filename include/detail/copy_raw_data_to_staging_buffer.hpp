@@ -9,7 +9,7 @@ namespace mcs::vulkan
     constexpr static void copy_raw_data_to_staging_buffer(
         void *src, size_t size, const staging_buffer &staging_buffer)
     {
-        staging_buffer.mapAndUnmapMempry(src, size);
+        staging_buffer.mapAndUnmapMemory(src, size);
     }
 
     constexpr static void copy_raw_data_to_staging_buffer(

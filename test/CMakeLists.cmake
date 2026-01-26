@@ -106,3 +106,5 @@ auto_compile_vert_shaders_with_prefix("compile_all_${DIR_NAME}_vert"
 auto_compile_frag_shaders_with_prefix("compile_all_${DIR_NAME}_frag"
     ${CMAKE_SOURCE_DIR}/test/${DIR_NAME}/shaders
     ${TEST_EXECUTABLE_OUTPUT_PATH}/${DIR_NAME}/shaders ${DIR_NAME})
+
+include(${CMAKE_SOURCE_DIR}/test/examples/examples.cmake)

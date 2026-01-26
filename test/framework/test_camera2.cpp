@@ -733,7 +733,7 @@ struct mesh_data
                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)};
 
-        stagingBuffer.mapAndUnmapMempry(vertices.data(),
+        stagingBuffer.mapAndUnmapMemory(vertices.data(),
                                         static_cast<size_t>(BUFFER_SIZE));
         mcs::vulkan::copy_buffer(device, queue, commandPool, stagingBuffer.buffer(),
                                  fb.vertexBuffer.buffer(), BUFFER_SIZE);
@@ -762,7 +762,7 @@ struct mesh_data
                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)};
 
-        stagingBuffer.mapAndUnmapMempry(indices.data(), static_cast<size_t>(BUFFER_SIZE));
+        stagingBuffer.mapAndUnmapMemory(indices.data(), static_cast<size_t>(BUFFER_SIZE));
         mcs::vulkan::copy_buffer(device, queue, commandPool, stagingBuffer.buffer(),
                                  fb.indexBuffer.buffer(), BUFFER_SIZE);
     }

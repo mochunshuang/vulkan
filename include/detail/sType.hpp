@@ -8,7 +8,7 @@
 namespace mcs::vulkan
 {
     template <typename T>
-    static consteval auto sType() -> VkStructureType // NOLINT
+    static consteval auto sType() noexcept // NOLINT
     {
         if constexpr (std::is_same_v<T, VkApplicationInfo>)
             return VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -123,6 +123,21 @@ namespace mcs::vulkan
         else if constexpr (std::is_same_v<
                                T, VkPhysicalDeviceExtendedDynamicState3FeaturesEXT>)
             return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT;
+        else if constexpr (std::is_same_v<T, VkPhysicalDeviceProperties2>)
+            return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        else if constexpr (std::is_same_v<
+                               T, VkPhysicalDeviceExtendedDynamicState3PropertiesEXT>)
+            return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_PROPERTIES_EXT;
+        else if constexpr (std::is_same_v<T, VkPhysicalDeviceVulkan12Properties>)
+            return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
+        else if constexpr (std::is_same_v<T, VkBufferDeviceAddressInfo>)
+            return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        else if constexpr (std::is_same_v<T, VkMemoryAllocateFlagsInfo>)
+            return VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+        else if constexpr (
+            std::is_same_v<T,
+                           VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT>)
+            return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
         else
             // static_assert(false, "Unknown Vulkan structure type");
             std::terminate();

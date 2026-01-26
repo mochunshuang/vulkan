@@ -61,7 +61,7 @@ namespace mcs::vulkan
         [[nodiscard]] auto *map(size_t size) const
         {
             void *data; // NOLINT
-            device_->mapMempry(bufferMemory_, 0, size, 0, &data);
+            device_->mapMemory(bufferMemory_, 0, size, 0, &data);
             return data;
         }
         void unmap() const noexcept

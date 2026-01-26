@@ -41,7 +41,7 @@ struct frame_context
     const logical_device *device_{};
     std::vector<VkSemaphore> presentCompleteSemaphore;
     std::vector<VkSemaphore> renderFinishedSemaphore;
-    std::vector<VkFence> inFlightFences;
+    std::array<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences{};
     uint32_t semaphoreIndex = 0;
     uint32_t currentFrame = 0;
     // NOLINTEND
@@ -82,7 +82,6 @@ struct frame_context
 
         VkFenceCreateInfo fenceInfo = {.sType = sType<VkFenceCreateInfo>(),
                                        .flags = VK_FENCE_CREATE_SIGNALED_BIT};
-        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             if (::vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) !=
@@ -103,7 +102,7 @@ struct frame_context
 
         for (auto *fence : inFlightFences)
             ::vkDestroyFence(device_->raw_data(), fence, nullptr);
-        inFlightFences.clear();
+        // inFlightFences.clear();
     }
 
     constexpr void destroy() noexcept

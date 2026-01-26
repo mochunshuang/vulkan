@@ -323,7 +323,7 @@ class Mesh
                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)};
 
-            stagingBuffer.mapAndUnmapMempry(geom.vertices.data(), vertexBufferSize);
+            stagingBuffer.mapAndUnmapMemory(geom.vertices.data(), vertexBufferSize);
             mcs::vulkan::copy_buffer(device, queue, commandPool, stagingBuffer.buffer(),
                                      br.vertexBuffer.buffer(), vertexBufferSize);
         }
@@ -351,7 +351,7 @@ class Mesh
                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)};
 
-            indexStagingBuffer.mapAndUnmapMempry(geom.triangleIndices.data(),
+            indexStagingBuffer.mapAndUnmapMemory(geom.triangleIndices.data(),
                                                  indexBufferSize);
             mcs::vulkan::copy_buffer(device, queue, commandPool,
                                      indexStagingBuffer.buffer(),
@@ -381,7 +381,7 @@ class Mesh
                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)};
 
-            lineStagingBuffer.mapAndUnmapMempry(geom.lineIndices.data(), lineBufferSize);
+            lineStagingBuffer.mapAndUnmapMemory(geom.lineIndices.data(), lineBufferSize);
             mcs::vulkan::copy_buffer(device, queue, commandPool,
                                      lineStagingBuffer.buffer(),
                                      br.lineIndexBuffer.buffer(), lineBufferSize);

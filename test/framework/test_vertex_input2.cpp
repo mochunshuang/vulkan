@@ -44,7 +44,7 @@ struct frame_context
     const logical_device *device_{};
     std::vector<VkSemaphore> presentCompleteSemaphore;
     std::vector<VkSemaphore> renderFinishedSemaphore;
-    std::vector<VkFence> inFlightFences;
+    std::array<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences{};
     uint32_t semaphoreIndex = 0;
     uint32_t currentFrame = 0;
     // NOLINTEND
@@ -85,7 +85,6 @@ struct frame_context
 
         VkFenceCreateInfo fenceInfo = {.sType = sType<VkFenceCreateInfo>(),
                                        .flags = VK_FENCE_CREATE_SIGNALED_BIT};
-        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             if (::vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) !=
@@ -106,7 +105,6 @@ struct frame_context
 
         for (auto *fence : inFlightFences)
             ::vkDestroyFence(device_->raw_data(), fence, nullptr);
-        inFlightFences.clear();
     }
 
     constexpr void destroy() noexcept
@@ -356,7 +354,7 @@ struct mesh_data
                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)};
 
-        stagingBuffer.mapAndUnmapMempry(data, static_cast<size_t>(BUFFER_SIZE));
+        stagingBuffer.mapAndUnmapMemory(data, static_cast<size_t>(BUFFER_SIZE));
 
         mcs::vulkan::copy_buffer(device, queue, commandPool, stagingBuffer.buffer(),
                                  fb.vertexBuffer.buffer(), BUFFER_SIZE);
@@ -412,7 +410,7 @@ struct mesh_data
                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)};
 
-        stagingBuffer.mapAndUnmapMempry(indices.data(), static_cast<size_t>(BUFFER_SIZE));
+        stagingBuffer.mapAndUnmapMemory(indices.data(), static_cast<size_t>(BUFFER_SIZE));
 
         mcs::vulkan::copy_buffer(device, queue, commandPool, stagingBuffer.buffer(),
                                  fb.indexBuffer.buffer(), BUFFER_SIZE);
