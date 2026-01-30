@@ -142,6 +142,13 @@ namespace mcs::vulkan::core
             return VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
         else if constexpr (std::is_same_v<T, VkCommandBufferInheritanceInfo>)
             return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+        else if constexpr (std::is_same_v<T, VkPhysicalDeviceDescriptorIndexingFeatures>)
+            return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+        else if constexpr (std::is_same_v<T, VkDescriptorSetLayoutBindingFlagsCreateInfo>)
+            return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+        else if constexpr (std::is_same_v<
+                               T, VkDescriptorSetVariableDescriptorCountAllocateInfo>)
+            return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
         else
             // static_assert(false, "Unknown Vulkan structure type");
             std::terminate();

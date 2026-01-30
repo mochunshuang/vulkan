@@ -242,19 +242,40 @@ namespace mcs::vulkan::core
         {
             pool_->logicalDevice_->cmdBindIndexBuffer(value_, buffer, offset, indexType);
         }
-        void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-                         int32_t vertexOffset, uint32_t firstInstance) const noexcept
+        constexpr void drawIndexed(uint32_t indexCount, uint32_t instanceCount,
+                                   uint32_t firstIndex, int32_t vertexOffset,
+                                   uint32_t firstInstance) const noexcept
         {
             pool_->logicalDevice_->cmdDrawIndexed(value_, indexCount, instanceCount,
                                                   firstIndex, vertexOffset,
                                                   firstInstance);
         }
-        void pushConstants(VkPipelineLayout layout, VkShaderStageFlagBits stageFlags,
-                           uint32_t offset, uint32_t size,
-                           const void *pValues) const noexcept
+        constexpr void pushConstants(VkPipelineLayout layout,
+                                     VkShaderStageFlagBits stageFlags, uint32_t offset,
+                                     uint32_t size, const void *pValues) const noexcept
         {
             pool_->logicalDevice_->cmdPushConstants(value_, layout, stageFlags, offset,
                                                     size, pValues);
+        }
+
+        constexpr void bindDescriptorSets(VkPipelineBindPoint pipelineBindPoint,
+                                          VkPipelineLayout layout, uint32_t firstSet,
+                                          uint32_t descriptorSetCount,
+                                          const VkDescriptorSet *pDescriptorSets,
+                                          uint32_t dynamicOffsetCount,
+                                          const uint32_t *pDynamicOffsets) const noexcept
+        {
+            pool_->logicalDevice_->cmdBindDescriptorSets(
+                value_, pipelineBindPoint, layout, firstSet, descriptorSetCount,
+                pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
+        }
+        constexpr void copyBufferToImage(VkBuffer srcBuffer, VkImage dstImage,
+                                         VkImageLayout dstImageLayout,
+                                         uint32_t regionCount,
+                                         const VkBufferImageCopy *pRegions) const noexcept
+        {
+            pool_->logicalDevice_->cmdCopyBufferToImage(
+                value_, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions);
         }
     };
 

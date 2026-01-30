@@ -57,10 +57,10 @@ namespace mcs::vulkan::core
             return device_ != nullptr && buffer_ != nullptr && bufferMemory_ != nullptr;
         }
 
-        [[nodiscard]] auto *map(size_t size) const
+        [[nodiscard]] void *map(size_t size, VkMemoryMapFlags flags = 0) const
         {
             void *data; // NOLINT
-            device_->mapMemory(bufferMemory_, 0, size, 0, &data);
+            device_->mapMemory(bufferMemory_, 0, size, flags, &data);
             return data;
         }
         void unmap() const noexcept
@@ -91,6 +91,11 @@ namespace mcs::vulkan::core
             {
                 if (buffer_ != nullptr)
                     device_->destroyBuffer(buffer_, device_->allocator());
+
+                // https://docs.vulkan.org/refpages/latest/refpages/source/vkFreeMemory.html#:~:text=If%20a%20memory%20object%20is%20mapped%20at%20the%20time%20it%20is%20freed%2C%20it%20is%20implicitly%20unmapped
+                //  If a memory object is mapped at the time it is freed, it is implicitly
+                //  unmapped
+                //   unmap(); //NOTE: 不需要
                 if (bufferMemory_ != nullptr)
                     device_->freeMemory(bufferMemory_, device_->allocator());
 

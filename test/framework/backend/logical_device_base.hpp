@@ -421,6 +421,128 @@ namespace mcs::vulkan::core
             MCS_ASSERT(cmdPushConstants_ != nullptr);
             cmdPushConstants_(commandBuffer, layout, stageFlags, offset, size, pValues);
         }
+        [[nodiscard]] auto createDescriptorSetLayout(
+            const VkDescriptorSetLayoutCreateInfo &createInfo,
+            const VkAllocationCallbacks *pAllocator) const
+        {
+            MCS_ASSERT(createDescriptorSetLayout_ != nullptr);
+            VkDescriptorSetLayout setLayout; // NOLINT
+            check_vkresult(
+                createDescriptorSetLayout_(value_, &createInfo, pAllocator, &setLayout));
+            return setLayout;
+        }
+        [[nodiscard]] auto createDescriptorPool(
+            const VkDescriptorPoolCreateInfo &createInfo,
+            const VkAllocationCallbacks *pAllocator) const
+        {
+            MCS_ASSERT(createDescriptorPool_ != nullptr);
+            VkDescriptorPool descriptorPool; // NOLINT
+            check_vkresult(
+                createDescriptorPool_(value_, &createInfo, pAllocator, &descriptorPool));
+            return descriptorPool;
+        }
+        [[nodiscard]] std::vector<VkDescriptorSet> allocateDescriptorSets(
+            const VkDescriptorSetAllocateInfo &allocateInfo) const
+        {
+            MCS_ASSERT(allocateDescriptorSets_ != nullptr);
+            std::vector<VkDescriptorSet> descriptorSet{allocateInfo.descriptorSetCount};
+            check_vkresult(
+                allocateDescriptorSets_(value_, &allocateInfo, descriptorSet.data()));
+            return descriptorSet;
+        }
+        constexpr void updateDescriptorSets(
+            uint32_t descriptorWriteCount, const VkWriteDescriptorSet *descriptorWrites,
+            uint32_t descriptorCopyCount,
+            const VkCopyDescriptorSet *descriptorCopies) const noexcept
+        {
+            MCS_ASSERT(updateDescriptorSets_ != nullptr);
+            updateDescriptorSets_(value_, descriptorWriteCount, descriptorWrites,
+                                  descriptorCopyCount, descriptorCopies);
+        }
+        constexpr void cmdBindDescriptorSets(
+            VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint,
+            VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount,
+            const VkDescriptorSet *pDescriptorSets, uint32_t dynamicOffsetCount,
+            const uint32_t *pDynamicOffsets) const noexcept
+        {
+            MCS_ASSERT(cmdBindDescriptorSets_ != nullptr);
+            cmdBindDescriptorSets_(commandBuffer, pipelineBindPoint, layout, firstSet,
+                                   descriptorSetCount, pDescriptorSets,
+                                   dynamicOffsetCount, pDynamicOffsets);
+        }
+        void destroyDescriptorPool(VkDescriptorPool descriptorPool,
+                                   const VkAllocationCallbacks *pAllocator) const noexcept
+        {
+            MCS_ASSERT(destroyDescriptorPool_ != nullptr);
+            destroyDescriptorPool_(value_, descriptorPool, pAllocator);
+        }
+        void destroyDescriptorSetLayout(
+            VkDescriptorSetLayout descriptorSetLayout,
+            const VkAllocationCallbacks *pAllocator) const noexcept
+        {
+            MCS_ASSERT(destroyDescriptorSetLayout_ != nullptr);
+            destroyDescriptorSetLayout_(value_, descriptorSetLayout, pAllocator);
+        }
+        void freeDescriptorSets(VkDescriptorPool descriptorPool,
+                                uint32_t descriptorSetCount,
+                                const VkDescriptorSet *pDescriptorSets) const noexcept
+        {
+            MCS_ASSERT(freeDescriptorSets_ != nullptr);
+            freeDescriptorSets_(value_, descriptorPool, descriptorSetCount,
+                                pDescriptorSets);
+        }
+        [[nodiscard]] VkImage createImage(const VkImageCreateInfo &createInfo,
+                                          const VkAllocationCallbacks *pAllocator) const
+        {
+            MCS_ASSERT(createImage_ != nullptr);
+            VkImage image; // NOLINT
+            check_vkresult(createImage_(value_, &createInfo, pAllocator, &image));
+            return image;
+        }
+        [[nodiscard]] VkMemoryRequirements getImageMemoryRequirements(
+            VkImage image) const noexcept
+        {
+            MCS_ASSERT(getImageMemoryRequirements_ != nullptr);
+            VkMemoryRequirements m;
+            getImageMemoryRequirements_(value_, image, &m);
+            return m;
+        }
+        void cmdCopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer,
+                                  VkImage dstImage, VkImageLayout dstImageLayout,
+                                  uint32_t regionCount,
+                                  const VkBufferImageCopy *pRegions) const noexcept
+        {
+            MCS_ASSERT(cmdCopyBufferToImage_ != nullptr);
+            cmdCopyBufferToImage_(commandBuffer, srcBuffer, dstImage, dstImageLayout,
+                                  regionCount, pRegions);
+        }
+        [[nodiscard]] VkSampler createSampler(
+            const VkSamplerCreateInfo &createInfo,
+            const VkAllocationCallbacks *pAllocator) const
+        {
+            MCS_ASSERT(createSampler_ != nullptr);
+            VkSampler sampler; // NOLINT
+            check_vkresult(createSampler_(value_, &createInfo, pAllocator, &sampler));
+            return sampler;
+        }
+        void destroySampler(VkSampler sampler,
+                            const VkAllocationCallbacks *pAllocator) const noexcept
+        {
+            MCS_ASSERT(destroySampler_ != nullptr);
+            destroySampler_(value_, sampler, pAllocator);
+        }
+        void destroyImage(VkImage image,
+                          const VkAllocationCallbacks *pAllocator) const noexcept
+        {
+            MCS_ASSERT(destroyImage_ != nullptr);
+            destroyImage_(value_, image, pAllocator);
+        }
+        void bindImageMemory(VkImage image, VkDeviceMemory memory,
+                             VkDeviceSize memoryOffset) const noexcept
+        {
+            MCS_ASSERT(bindImageMemory_ != nullptr);
+            bindImageMemory_(value_, image, memory, memoryOffset);
+        }
     };
 
 }; // namespace mcs::vulkan::core

@@ -72,6 +72,21 @@ namespace mcs::vulkan::core
         PFN_vkCmdBindIndexBuffer cmdBindIndexBuffer_{};
         PFN_vkCmdDrawIndexed cmdDrawIndexed_{};
         PFN_vkCmdPushConstants cmdPushConstants_{};
+        PFN_vkCreateDescriptorSetLayout createDescriptorSetLayout_{};
+        PFN_vkCreateDescriptorPool createDescriptorPool_;
+        PFN_vkAllocateDescriptorSets allocateDescriptorSets_{};
+        PFN_vkUpdateDescriptorSets updateDescriptorSets_{};
+        PFN_vkCmdBindDescriptorSets cmdBindDescriptorSets_{};
+        PFN_vkDestroyDescriptorPool destroyDescriptorPool_{};
+        PFN_vkDestroyDescriptorSetLayout destroyDescriptorSetLayout_{};
+        PFN_vkFreeDescriptorSets freeDescriptorSets_{};
+        PFN_vkCreateImage createImage_{};
+        PFN_vkGetImageMemoryRequirements getImageMemoryRequirements_{};
+        PFN_vkCmdCopyBufferToImage cmdCopyBufferToImage_{};
+        PFN_vkCreateSampler createSampler_{};
+        PFN_vkDestroySampler destroySampler_{};
+        PFN_vkDestroyImage destroyImage_{};
+        PFN_vkBindImageMemory bindImageMemory_{};
         // NOLINTEND
         device_base() = default;
         constexpr explicit device_base(value_type value) noexcept
@@ -144,7 +159,32 @@ namespace mcs::vulkan::core
               cmdBindIndexBuffer_{
                   funPtr<PFN_vkCmdBindIndexBuffer>("vkCmdBindIndexBuffer")},
               cmdDrawIndexed_{funPtr<PFN_vkCmdDrawIndexed>("vkCmdDrawIndexed")},
-              cmdPushConstants_{funPtr<PFN_vkCmdPushConstants>("vkCmdPushConstants")}
+              cmdPushConstants_{funPtr<PFN_vkCmdPushConstants>("vkCmdPushConstants")},
+              createDescriptorSetLayout_{
+                  funPtr<PFN_vkCreateDescriptorSetLayout>("vkCreateDescriptorSetLayout")},
+              createDescriptorPool_{
+                  funPtr<PFN_vkCreateDescriptorPool>("vkCreateDescriptorPool")},
+              allocateDescriptorSets_{
+                  funPtr<PFN_vkAllocateDescriptorSets>("vkAllocateDescriptorSets")},
+              updateDescriptorSets_{
+                  funPtr<PFN_vkUpdateDescriptorSets>("vkUpdateDescriptorSets")},
+              cmdBindDescriptorSets_{
+                  funPtr<PFN_vkCmdBindDescriptorSets>("vkCmdBindDescriptorSets")},
+              destroyDescriptorPool_{
+                  funPtr<PFN_vkDestroyDescriptorPool>("vkDestroyDescriptorPool")},
+              destroyDescriptorSetLayout_{funPtr<PFN_vkDestroyDescriptorSetLayout>(
+                  "vkDestroyDescriptorSetLayout")},
+              freeDescriptorSets_{
+                  funPtr<PFN_vkFreeDescriptorSets>("vkFreeDescriptorSets")},
+              createImage_{funPtr<PFN_vkCreateImage>("vkCreateImage")},
+              getImageMemoryRequirements_{funPtr<PFN_vkGetImageMemoryRequirements>(
+                  "vkGetImageMemoryRequirements")},
+              cmdCopyBufferToImage_{
+                  funPtr<PFN_vkCmdCopyBufferToImage>("vkCmdCopyBufferToImage")},
+              createSampler_{funPtr<PFN_vkCreateSampler>("vkCreateSampler")},
+              destroySampler_{funPtr<PFN_vkDestroySampler>("vkDestroySampler")},
+              destroyImage_{funPtr<PFN_vkDestroyImage>("vkDestroyImage")},
+              bindImageMemory_{funPtr<PFN_vkBindImageMemory>("vkBindImageMemory")}
         {
             MCSLOG_INFO("load VkDevice pfn [begin]");
             MCS_ASSERT(getDeviceQueue_ != nullptr);
